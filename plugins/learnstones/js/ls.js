@@ -14,7 +14,7 @@
 				url : lsAjax.ajaxurl,
 				data : {action: "ls_submission", type: "mark", post_id : post_id, learnstone: ls, response : response, nonce: nonce},
 				success: function(response) {
-					// alert(response.response);
+					//alert(response.response);
          			}
 			});
 			$.colorbox.next();
@@ -27,7 +27,7 @@
 				url : lsAjax.ajaxurl,
 				data : {action: "ls_submission", type: "sub", email: email, post_id : post_id, nonce: nonce},
 				success: function(response) {
-					alert(response.response);
+					//alert(response.response);
          			}
 			});
 		}

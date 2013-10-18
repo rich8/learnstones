@@ -220,11 +220,12 @@ index.php
 /plugins/akismet/
 /plugins/markdown-on-save-improved/
 /plugins/nextend-google-connect/
-/plugins/shortcoder/
-/plugins/revision-control/
 /plugins/post-forking/
-/plugins/wp-markdown/
+/plugins/revision-control/
+/plugins/shortcoder/
 /plugins/user-submitted-posts/
+/plugins/wordpress-importer/
+/plugins/wp-markdown/
 /themes/index.php
 /themes/twentythirteen/
 /themes/twentytwelve/
