@@ -218,9 +218,12 @@ pip-log.txt
 index.php
 /plugins/index.php
 /plugins/akismet/
+#/plugins/csssWP/
 /plugins/markdown-on-save-improved/
 /plugins/nextend-google-connect/
 /plugins/post-forking/
+/plugins/post-tags-and-categories-for-pages/
+/plugins/add-tags-and-category-to-page/
 /plugins/revision-control/
 /plugins/shortcoder/
 /plugins/user-submitted-posts/
