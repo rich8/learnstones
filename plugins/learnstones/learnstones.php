@@ -35,7 +35,7 @@ class Learnstones_Plugin
 	function __construct() {
 		add_action( 'init', array( $this, 'init' ) );
 		add_action( 'wp_logout', array( $this, 'logout' ) );
-		add_action( 'wp_login', array($this, 'login' ) );
+		add_action( 'wp_login', array($this, 'login'), 10, 2 );
 		add_filter( 'map_meta_cap', array( $this, 'map_meta_cap'), 10, 4 );
 		add_action( 'wp_ajax_ls_submission', array($this, 'submission'));
 		add_action( 'wp_ajax_nopriv_ls_submission', array($this, 'submission_nopriv'));
@@ -128,6 +128,7 @@ class Learnstones_Plugin
 			$this->session_id = $_COOKIE[self::LS_COOKIE];
 		}
 
+        $table_name = $wpdb->prefix . self::LS_TBL_SESSION;
 		if($this->session_id == 0) {		
 			wp_localize_script( 'ls_script', 'lsDebug', array( 'ajaxcookie' => -1));
 			$table_name = $wpdb->prefix . self::LS_TBL_SESSION;
@@ -309,11 +310,12 @@ class Learnstones_Plugin
 
 	}
 
-	function login()
+	function login($user_login, $user)
 	{
 		//If a session is active, save it to the database
 		global $wpdb;
 
+        wp_set_current_user($user->id);
 		if(isset($this->session))
 		{
 			foreach($this->session as $post => $responses)
