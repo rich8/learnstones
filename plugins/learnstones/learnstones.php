@@ -329,7 +329,7 @@ class Learnstones_Plugin
 			$wpdb->update(
 				$table_name,
 				array(
-					'session_data' => bin2hex(serialize($this->session))
+					'session_data' => serialize($this->session)
 				),
 				array(
 					'id' => $this->session_id
