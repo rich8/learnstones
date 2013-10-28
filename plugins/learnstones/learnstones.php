@@ -1,10 +1,10 @@
 <?php
 /*
 Plugin Name: Learnstones
-Plugin URI: http://learnstones.com/
+Plugin URI: http://github.com/rich8/learnstones-wp
 Description: Does all our learnstones stuff.
 Author: Raymond Francis
-Version: 0.3
+Version: 0.22
 */
 
 //http://localhost/wordpress/?ls_lesson=what
