@@ -1,0 +1,144 @@
+.lsslidemenu {
+	position:absolute;
+	left:0px;
+	top:0px;
+	width:100%;
+	height:120px;
+	overflow:hidden;
+}
+
+.lsslidebody {
+	position:absolute;
+	left:0px;
+	top:120px;
+	width:100%;
+	height:70%;
+	overflow:auto;
+}
+
+
+ul.lsmenu {
+	list-style-type: none;
+	margin: 0px 0px;
+	border:2px solid #a1a1a1;
+	padding:3px;
+	border-radius:10px;
+	background-color: #dddddd;
+	height:110px;
+}
+
+ul.lsmenu li {
+	margin-left : 10px;
+}
+
+ul.lsmenu a {
+	display:block; 
+	float: left;
+	width:64px; 
+	margin: 0px 10px;
+	text-align: center;
+	text-decoration: none;
+}
+
+ul.lsmenu a:link {
+	color:#21759b;
+	text-decoration: none;
+}
+
+ul.lsmenu a:visited {
+	color:#21759b; 
+	text-decoration: none;
+}
+
+ul.lsmenu a:hover {
+	color:#21759b; 
+	text-decoration: underline;
+}
+
+ul.lsmenu a:active {
+	color:#21759b; 
+	text-decoration: none;
+}
+
+.lsmenuimg {
+	display : block;
+	height: 64px;
+	background-image: url(images/lsimg.png);
+	background-position: 0px 0px;
+	background-repeat:no-repeat;
+}
+
+.lsred {
+	background-position: -64px 0px;
+}
+
+.lsamber {
+	background-position: -128px 0px;
+}
+
+.lsgreen {
+	background-position: -192px 0px;
+}
+
+.lsgrey {
+	background-position: 0px 0px;
+}
+
+
+ul.lslights {
+	list-style-type: none;
+	margin: 0px 0px;
+	border:2px solid #a1a1a1;
+	padding:3px;
+	border-radius:10px;
+	background-color: #dddddd;
+}
+
+
+.lslights li {
+	height:32px;
+}
+
+.lslightsa {
+	display: block;
+	background-image: url(images/lsimg.png);
+	background-position: 0px 0px;
+	background-repeat:repeat-y;
+	padding-left:36px;
+	height: 32px;
+	line-height: 32px;
+}
+
+
+a.lslightsa:link {
+	color:#21759b; 
+	text-decoration: none;
+}
+
+a.lslightsa:visited {
+	color:#21759b; 
+	text-decoration: none;
+}
+
+a.lslightsa:hover {
+	color:#21759b; 
+	text-decoration: underline;
+}
+
+a.lslightsa:active {
+	color:#21759b; 
+	text-decoration: none;
+}
+
+.lslightsred {
+	background-position: 0px -64px;
+}
+
+.lslightsamber {
+	background-position: 0px -96px;
+}
+
+.lslightsgreen {
+	background-position: 0px -128px;
+}
+

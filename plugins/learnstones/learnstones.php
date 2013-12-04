@@ -1,10 +1,10 @@
 <?php
 /*
 Plugin Name: Learnstones
-Plugin URI: http://github.com/rich8/learnstones-wp
+Plugin URI: http://learnstones.com/
 Description: Does all our learnstones stuff.
 Author: Raymond Francis
-Version: 0.22
+Version: 0.3
 */
 
 //http://localhost/wordpress/?ls_lesson=what
@@ -12,9 +12,7 @@ Version: 0.22
 class Learnstones_Plugin
 {
 
-	const LS_DB_VERSION = "0.2";
-
-	const LS_OPT_DB_VERSION = "ls_db_version";
+	const LS_DB_VERSION = "0.21";
 
 	const LS_STYLES = "lsred lsamber lsgreen lsgrey";
 
@@ -22,11 +20,17 @@ class Learnstones_Plugin
 
 	const LS_OPTIONS = "ls_options";
 
+	const LS_TYPE_LESSON = "ls_lesson";
+
+	const LS_OPT_DB_VERSION = "ls_db_version";
 	const LS_OPT_SESSION_DURATION = "duration";
 	const LS_OPT_SESSION_PURGE = "purge";
 
 	const LS_TBL_SESSION = "ls_session";
 	const LS_TBL_RESPONSES = "ls_responses";
+	const LS_TBL_LEARNSTONES = "ls_learnstones";
+
+	const LS_URLQ_DASH = "db";
 
 	private $session;
 	private $session_id;
@@ -36,16 +40,29 @@ class Learnstones_Plugin
 		add_action( 'init', array( $this, 'init' ) );
 		add_action( 'wp_logout', array( $this, 'logout' ) );
 		add_action( 'wp_login', array($this, 'login'), 10, 2 );
-		add_filter( 'map_meta_cap', array( $this, 'map_meta_cap'), 10, 4 );
 		add_action( 'wp_ajax_ls_submission', array($this, 'submission'));
 		add_action( 'wp_ajax_nopriv_ls_submission', array($this, 'submission_nopriv'));
 		add_action( 'plugins_loaded', array($this, 'db_check') );
 		add_action( 'admin_menu', array($this, 'create_options_page') );
 		add_action( 'admin_init', array($this, 'register_and_build_fields') );
+		//add_action( 'pre_get_posts', array($this, 'goto_learnstone') );
 
+		add_filter( 'map_meta_cap', array( $this, 'map_meta_cap'), 10, 4 );
+		add_filter( 'post_row_actions', array($this, 'lesson_action_row'), 10, 2 );
+		add_filter( 'the_content', array($this, 'content_filter' ) );
+		add_filter( 'query_vars', array($this, 'add_query_vars') );
 
 		register_activation_hook( __FILE__, array($this, 'activation') );
 	}
+
+	function add_query_vars( $qvars ) {
+		// For learnstone selection by title
+		$qvars[] = 'course';
+		$qvars[] = 'ls';
+
+		return $qvars;
+	}
+
 
 	function init() {
 
@@ -80,7 +97,7 @@ class Learnstones_Plugin
 				);
 
 
-		register_post_type( 	'ls_lesson',
+		register_post_type( 	self::LS_TYPE_LESSON,
 					array(
 						'labels' => $labels,
 						'public' => true,
@@ -107,31 +124,20 @@ class Learnstones_Plugin
 							 )
 		);
 
-		wp_register_style( 'ls_colorbox_style', plugins_url('css/colorbox.css', __FILE__) );
-		wp_enqueue_style( 'ls_colorbox_style' );
-
-		wp_deregister_script('jquery');
-		wp_register_script('jquery', 'http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js', false, '');		
-		wp_enqueue_script( 'jquery' );
-
-		wp_register_script( 'ls_colorbox_script', plugins_url('js/jquery.colorbox.js', __FILE__), array('jquery') );
-		wp_enqueue_script( 'ls_colorbox_script' );
-
-		wp_register_script( 'ls_script', plugins_url('js/ls.js', __FILE__), array('jquery') );
+		//wp_deregister_script('jquery');
+		//wp_register_script('jquery', 'http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js', false, '');		
+		//wp_enqueue_script( 'jquery' );
+	
+		wp_register_script( 'ls_script', plugins_url('js/ls.js', __FILE__), array('jquery', 'ls_theme_script_0') );
 		wp_localize_script( 'ls_script', 'lsAjax', array( 'ajaxurl' => admin_url( 'admin-ajax.php' ), 'LS_RED' => 0, 'LS_AMBER' => 1, 'LS_GREEN' => 2, 'LS_GREY' => 3, 'LS_STYLES' => self::LS_STYLES ));
 
-		//The twentytwelve style sheet forces ul styles for some reason, hence dependency.
-		wp_register_style( 'ls_style', plugins_url('css/slide.css', __FILE__), array('twentytwelve-style') );
-		wp_enqueue_style( 'ls_style' );
 		$this->session_id = 0;
 		if (isset($_COOKIE[self::LS_COOKIE])) {
 			$this->session_id = $_COOKIE[self::LS_COOKIE];
 		}
 
-        $table_name = $wpdb->prefix . self::LS_TBL_SESSION;
+		$table_name = $wpdb->prefix . self::LS_TBL_SESSION;
 		if($this->session_id == 0) {		
-			wp_localize_script( 'ls_script', 'lsDebug', array( 'ajaxcookie' => -1));
-			$table_name = $wpdb->prefix . self::LS_TBL_SESSION;
 			$user = 0;
 			if(is_user_logged_in())
 			{
@@ -168,8 +174,9 @@ class Learnstones_Plugin
 		}
 
 
-		$options = get_option(self::LS_OPTIONS);
 		$this->get_session();
+
+		$options = get_option(self::LS_OPTIONS);
 		if($options[self::LS_OPT_SESSION_DURATION] == 0)
 		{
 			setcookie(self::LS_COOKIE, $this->session_id, 0);
@@ -181,6 +188,14 @@ class Learnstones_Plugin
 
 		wp_enqueue_script( 'ls_script' );
 
+	}
+
+	function lesson_action_row($actions, $post)
+	{
+		if ($post->post_type == self::LS_TYPE_LESSON){
+	             $actions['dashboard'] = "<a title='" . esc_attr(__('Dashboard')) . "' href='" . get_permalink( $post )  . "&" . self::LS_URLQ_DASH . "=1'>" . __('Dashboard') . "</a>";
+		}
+		return $actions;
 	}
 
 	function create_options_page() {
@@ -203,9 +218,9 @@ class Learnstones_Plugin
 
 	function register_and_build_fields() {
 		register_setting(self::LS_OPTIONS, self::LS_OPTIONS, array($this, 'validate_setting'));
-		add_settings_section('main_section', 'Main Settings', array($this, 'setting_section'), __FILE__);
-		add_settings_field(self::LS_OPT_SESSION_DURATION, 'Learnstones Session Duration:', array($this, 'setting_input'), __FILE__, 'main_section', self::LS_OPT_SESSION_DURATION);
-		add_settings_field(self::LS_OPT_SESSION_PURGE, 'Purge Sessions from Database:', array($this, 'setting_input'), __FILE__, 'main_section', self::LS_OPT_SESSION_PURGE);
+		add_settings_section('ls_main_section', 'Main Settings', array($this, 'setting_section'), __FILE__);
+		add_settings_field(self::LS_OPT_SESSION_DURATION, 'Learnstones Session Duration:', array($this, 'setting_input'), __FILE__, 'ls_main_section', self::LS_OPT_SESSION_DURATION);
+		add_settings_field(self::LS_OPT_SESSION_PURGE, 'Purge Sessions from Database:', array($this, 'setting_input'), __FILE__, 'ls_main_section', self::LS_OPT_SESSION_PURGE);
 	}
 
 	function validate_setting($ls_options) {
@@ -315,7 +330,7 @@ class Learnstones_Plugin
 		//If a session is active, save it to the database
 		global $wpdb;
 
-        wp_set_current_user($user->id);
+		wp_set_current_user($user->id);
 		if(isset($this->session))
 		{
 			foreach($this->session as $post => $responses)
@@ -401,6 +416,21 @@ class Learnstones_Plugin
 					data BLOB,
 					UNIQUE KEY id (id),
 					KEY response_key (user,post,stone,response)
+				);";
+			dbDelta( $sql );
+
+	   		$table_name = $wpdb->prefix . self::LS_TBL_LEARNSTONES;
+
+			$sql = "CREATE TABLE $table_name (
+					id bigint(20) NOT NULL AUTO_INCREMENT,
+					course bigint(20),
+					post bigint(20),
+					parent bigint(20),
+					name varchar(128),
+					order int(5),
+					UNIQUE KEY id (id),
+					UNIQUE KEY course_key (course, name),
+					UNIQUE KEY post_key (post, name)
 				);";
 			dbDelta( $sql );
 
@@ -533,77 +563,74 @@ class Learnstones_Plugin
 		}
 	}
 
-	function single_lesson()
+
+	function content_filter($content)
 	{
 		global $wpdb;
 		global $post;
 
-		?><div id="primary" class="site-content">
-			<div id="content" role="main">
-				Click <a id="openGallery" href="#">here</a> to view lesson.
-				<?php while ( have_posts() ) : the_post(); ?>
-					<div id="slides" style="display:none" >
-						<?php
-							$first = true;
-							$nonce = wp_create_nonce("ls_submission_nonce");
-							$content = get_the_content();
-							$classes = explode(" ", self::LS_STYLES);
-							$slides = explode("<hr />", $content);
-							$slides[] = "<h1>Submission</h1>Name/Email:<input type=\"text\" /><a onclick=\"jQuery.ls.submission('GotText', $post->ID, '$nonce' ); return false;\" href=\"#\">Submit</a>";
+		$ret = $content;
+		if( is_singular() && is_main_query() && get_post_type() == self::LS_TYPE_LESSON) {
+			if(isset($_GET[self::LS_URLQ_DASH]))
+			{
+				$ret = "The dashboard";
+			}
+			else
+			{
+				$postId = get_the_ID();
+				$ret = 	'Click <a id="openGallery" href="#">here</a> to view lesson.';
+				$ret .=		'<div id="slides" style="display:none" >';
+				$first = true;
+				$nonce = wp_create_nonce("ls_submission_nonce");
+				$classes = explode(" ", self::LS_STYLES);
+				$slides = explode("<hr />", $content);
+				$slides[] = "<h1>Submission</h1>Name/Email:<input type=\"text\" /><a onclick=\"jQuery.ls.submission('GotText', " . $postId . ", '" . $nonce . "' ); return false;\" href=\"#\">Submit</a>";
+				// This is the start of a non-js link, just for ref: $link = admin_url('admin-ajax.php?action=ls_submission&post_id='.$postId.'&nonce='.$nonce);
 
-							$link = admin_url('admin-ajax.php?action=ls_submission&post_id='.$post->ID.'&nonce='.$nonce);
-							foreach($slides as $key => $value) {
-								if($first) { ?>
-									<div class="lsfixedmenu" >
-										<ul class="lsmenu" ><?php 
-											for ($i = 0; $i < count($slides); $i++)
-											{
-												$class = "lsgrey";
-												$resp = $this->get_learnstone_data($post->ID, $i);
-												if($resp !== FALSE)
-												{
-													$class=$classes[$resp];
-												} ?>
-												<li><a onclick="jQuery.colorbox.setSelectedIndex(<?php echo($i) ?>); return false;" href="#"><span data-menu="lsmenu<?php echo($i) ?>" class="lsmenuimg <?php echo($class); ?>" ><?php echo($i + 1) ?></span><span data-menu="lsmenu<?php echo($i) ?>item">Dummy</span></a></li><?php
-											} ?>
-										</ul>
-									</div>
-									<div>
-										<ul class="lslights">
-											<li><a class="lslightsa lslightsred" onclick="jQuery.ls.mark(jQuery.colorbox.getSelectedIndex(), lsAjax.LS_RED, <?php echo($post->ID) ?>, '<?php echo($nonce) ?>' ); return false;" href="#">Red</a></li>
-											<li><a class="lslightsa lslightsamber" onclick="jQuery.ls.mark(jQuery.colorbox.getSelectedIndex(), lsAjax.LS_AMBER, <?php echo($post->ID) ?>, '<?php echo($nonce) ?>' ); return false;" href="#">Amber</a></li>
-											<li><a class="lslightsa lslightsgreen" onclick="jQuery.ls.mark(jQuery.colorbox.getSelectedIndex(), lsAjax.LS_GREEN, <?php echo($post->ID) ?>, '<?php echo($nonce) ?>' ); return false;" href="#">Green</a></li>
-										</ul>
-									</div>
-								<?php
+				foreach($slides as $key => $value) {
+					if($first) { 
+						$ret .= '<div class="lsfixedmenu" >';
+						$ret .= 	'<ul class="lsmenu" >';
+						for ($i = 0; $i < count($slides); $i++)
+						{
+							$class = "lsgrey";
+							$resp = $this->get_learnstone_data($postId, $i);
+							if($resp !== FALSE)
+							{
+								$class=$classes[$resp];
 							}
-						?>
-						<div class="colorbox" <?php if($first) { echo ('rel="gallery"'); } ?>>
-							<div data-menu="lsmenu<?php echo($key) ?>" >
-								<?php echo($value); ?>
-							</div>
-						</div>
-						<?php
-							if($first) { $first = false; }
+							$ret .=		'<li><a onclick="jQuery.ls.setSelectedIndex(' . $i . '); return false;" href="#"><span data-menu="lsmenu' . $i . '" class="lsmenuimg ' . $class . '" >' . ($i + 1) . '</span><span data-menu="lsmenu' . $i . 'item">Dummy</span></a></li>';
 						}
-						?>
-					</div>
+						$ret .= 	'</ul>';
+						$ret .= '</div>';
+						$ret .= '<div>';
+						$ret .= 	'<ul class="lslights">';
+						$ret .= 		'<li><a class="lslightsa lslightsred" onclick="jQuery.ls.mark(jQuery.ls.getSelectedIndex(), lsAjax.LS_RED, ' . $postId . ', \'' . $nonce . '\' ); return false;" href="#">Red</a></li>';
+						$ret .= 		'<li><a class="lslightsa lslightsamber" onclick="jQuery.ls.mark(jQuery.ls.getSelectedIndex(), lsAjax.LS_AMBER, ' . $postId . ', \'' . $nonce . '\' ); return false;" href="#">Amber</a></li>';
+						$ret .= 		'<li><a class="lslightsa lslightsgreen" onclick="jQuery.ls.mark(jQuery.ls.getSelectedIndex(), lsAjax.LS_GREEN, ' . $postId . ', \'' . $nonce . '\' ); return false;" href="#">Green</a></li>';
+						$ret .= 	'</ul>';
+						$ret .= '</div>';
+					}
+					$ret .= '<div class="slideshow" ';
+					if($first) {
+						$ret .= 'rel="gallery"';
+					}
+					$ret .= ' >';
+					$ret .= 	'<div data-menu="lsmenu' . $key . '">' . $value . '</div>';
+					$ret .= '</div>';
+					if($first) {
+						$first = false;
+					}
+				}
+				$ret .=		'</div>';
+			}
+		}
+		return $ret;
+	}
 
-					<?php /* get_template_part( 'content', get_post_format() ); */ ?>
-
-					<nav class="nav-single">
-						<h3 class="assistive-text"><?php _e( 'Post navigation', 'twentytwelve' ); ?></h3>
-						<span class="nav-previous"><?php previous_post_link( '%link', '<span class="meta-nav">' . _x( '&larr;', 'Previous post link', 'twentytwelve' ) . '</span> %title' ); ?></span>
-						<span class="nav-next"><?php next_post_link( '%link', '%title <span class="meta-nav">' . _x( '&rarr;', 'Next post link', 'twentytwelve' ) . '</span>' ); ?></span>
-					</nav><!-- .nav-single -->
-
-					<?php comments_template( '', true ); ?>
-
-				<?php endwhile; // end of the loop. ?>
-
-			</div><!-- #content -->
-		</div><!-- #primary -->
-	<?php
+	function get_file()
+	{
+		return __FILE__;
 	}
 }
 
