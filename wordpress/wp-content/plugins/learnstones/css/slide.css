@@ -1,0 +1,297 @@
+.ls_menu {
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    position: fixed;
+    background-color: transparent;
+}
+
+.ls_stones {
+	border:2px solid #a1a1a1;
+	padding:5px;
+	-webkit-border-radius:10px;
+	-moz-border-radius:10px;
+	border-radius:10px;
+	background-color: #dddddd;    
+    margin: 10px 10px 10px 10px;
+    height: 124px;
+    overflow: hidden;
+    -moz-box-shadow:100px 100px  100px 5px #fff;
+    -webkit-box-shadow:10px 10px  10px 5px #fff;
+    box-shadow:0px -10px 0px 10px #fff;
+}
+
+.ls_menu table
+{
+    border: 0px;
+    width: auto;
+}
+
+.ls_menu td {
+    border: 0px;
+    text-align: center;
+    margin: 0px;
+    padding: 0px 0px 0px 4px;
+    vertical-align: top;
+}
+
+.ls_menu td.ls_rotated {
+    height: 80px;
+    width: 100px;
+}
+
+input.ls_menu_input {
+    border: none;
+    background-image: none;
+    background-color: transparent;
+    cursor: pointer;
+    color: #21759b;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    white-space: normal;
+    -moz-hyphens: none;
+    -webkit-hyphens:none;
+    hyphens: none;
+    padding: 0px;
+}
+
+input.ls_menu_input:hover, input.ls_menu_input:focus {
+    border: none;
+    background-image: none;
+    background-color: transparent;
+    cursor: pointer;
+    color: #21759b;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    white-space: normal;
+    text-decoration: underline;
+    -moz-hyphens: none;
+    -webkit-hyphens:none;
+    hyphens: none;
+    padding: 0px;
+}
+
+input.ls_menu_input_align {
+    text-align: center;
+    font-size: medium;
+}
+
+input.ls_menu0, input.ls_menu0:hover, input.ls_menu0:focus {
+	background-position: 0px 0px;
+}
+
+.ls_body {
+    margin: 224px 10px 10px 10px;
+    background-color: #fff;
+}
+
+.ls_title {
+    font-weight: 800;
+}
+
+ul.ls_lights {
+	list-style-type: none;
+	margin: 10px 20px 10px 10px;
+	border:2px solid #a1a1a1;
+	padding:3px 3px 3px 3px;
+	-webkit-border-radius:10px;
+	-moz-border-radius:10px;
+	border-radius:10px;
+	background-color: #dddddd;
+}
+
+
+.ls_lights li {
+	height:32px;
+}
+
+input.ls_lightsa {
+    background-image: none;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    color: #21759b;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+}
+
+input.ls_lightsa:hover, input.ls_lightsa:focus {
+    background-image: none;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    color: #21759b;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    text-decoration: underline;
+}
+
+input.ls_lightsspan, input.ls_lightsspan:hover, input.ls_lightsspan:focus {
+	background-image: url(images/lsimg.png);
+	background-position: 0px 0px;
+	background-repeat:repeat-y;
+    background-color: transparent;
+    float: left;
+    width: 32px;
+    height: 32px;
+    padding-right: 5px;
+    border: none;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+}
+
+input.ls_lightsl1, input.ls_lightsl1:hover, input.ls_lightsl1:focus {
+	background-position: 0px -96px;
+}
+
+input.ls_lightsl2, input.ls_lightsl2:hover, input.ls_lightsl2:focus {
+	background-position: 0px -128px;
+}
+
+input.ls_lightsl3, input.ls_lightsl3:hover, input.ls_lightsl1:focus {
+	background-position: 0px -160px;
+}
+
+ul.ls_loginmenu {
+    list-style-type: none;
+    margin: 0px 10px 0px 0px;
+    padding: 0px;
+    float: right;
+    background-color: #fff;
+ }
+
+ul.ls_loginmenu li
+{
+   display: inline;
+    margin: 0px 0px 0px 0px;
+}
+
+ul.ls_loginmenu li + li:before
+{
+    content: " | ";
+}
+
+span.ls_loginmenu {
+    margin: 0px 0px 0px 10px;
+    padding: 0px;
+}
+
+div.ls_loginphide {
+    display: none;
+}
+
+div.ls_loginpshow {
+    display: inline;
+    position: relative;
+    top: 50px;
+    left: -250px;
+    margin-bottom: 50px;
+    margin-right: -250px;
+    padding: 15px;
+    background: #ffff00;    
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+}
+
+div.ls_loginpshow:after {
+    content: "";
+    position: absolute;
+    top: -15px;
+    left: 150px;
+    border-width: 0px 15px 15px;
+    border-style: solid;
+    border-color: #ffff00 transparent;
+    display: block;
+    width: 0;
+}
+
+ul.ls_loginmenu li.ls_loginmenushow {
+    display: inline;
+}
+
+ul.ls_loginmenu li.ls_loginmenuhide {
+    display: none;
+}
+
+input.ls_glogins, input.ls_glogins:hover
+{
+    padding: 0px;
+    margin: 0px;
+    background: transparent;
+    border: 0px;
+  	background-image: url(images/Red-signin_Short_base_32dp.png);
+	background-position: 0px 0px;
+	background-repeat:no-repeat;
+    cursor: pointer;
+    background-size: 42px 42px;
+    width: 42px;
+    height: 42px;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    vertical-align: middle;
+}
+
+
+/* Hides side bar */
+#secondary {
+    display: none;
+}
+
+/*
+ * Size related
+ */
+
+input.ls_menuimg, input.ls_menuimg:hover, input.ls_menuimg:focus {
+	display : inline-block;
+	background-image: url(images/lsimg.png);
+	background-position: 0px 0px;
+	background-repeat:no-repeat;
+    background-color: transparent;
+    border: 0px;
+    width: 64px;
+    height: 64px;
+/*    line-height: 64px;
+    vertical-align: middle;*/
+    color: #fff;
+    font-weight: 600;
+    font-size: 24px;
+    padding: 0px;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+}
+
+/* Twenty thirteen header fix */
+#masthead
+{
+    display: none;
+}
+
+input.ls_menu1, input.ls_menu1:hover, input.ls_menu1:focus {
+	background-position: -64px 0px;
+}
+
+input.ls_menu2, input.ls_menu2:hover, input.ls_menu2:focus {
+	background-position: -128px 0px;
+}
+
+input.ls_menu3, input.ls_menu3:hover, input.ls_menu3:focus {
+	background-position: -192px 0px;
+}
+
+input.ls_menu_active, input.ls_menu_active:hover {
+    -webkit-box-shadow: 0px 0px  5px 5px #ffffa3;
+    -moz-box-shadow: 0px 0px  5px 5px #ffffa3;
+    box-shadow: 0px 0px  5px 5px #ffffa3;
+    -moz-border-radius: 50%;
+    -webkit-border-radius: 50%;
+    border-radius: 50%;
+    background-color: #ffffa3;
+}

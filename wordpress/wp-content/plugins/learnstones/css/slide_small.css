@@ -1,0 +1,67 @@
+/*
+ * Size related
+ */
+.ls_menu td {
+    width: 32px;
+    height: 32px;
+    font-size: 10px;
+}
+
+.ls_menu td.ls_rotated {
+    height: 64px;
+    width: 40px;
+    max-width: 40px;
+    overflow: hidden;
+}
+
+.ls_menu td.ls_rotated > div {
+    height: 64px;
+    width: 64px;
+    line-height: 32px;
+    vertical-align: middle;
+    text-align: left;
+    -webkit-transform: rotate(270deg);
+    -moz-transform: rotate(270deg);
+    -ms-transform: rotate(270deg);
+    -o-transform: rotate(270deg);
+    transform:  rotate(270deg);
+/*    overflow: hidden;*/
+}
+
+input.ls_menuimg, input.ls_menuimg:hover {
+	display : block;
+	height: 32px;
+    width: 32px;
+    line-height: 32px;
+	background-image: url(images/lsimg.png);
+	background-position: -64px -128px;
+	background-repeat:no-repeat;
+    font-weight: 600;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+
+}
+
+input.ls_menu0, input.ls_menu0:hover {
+	background-position: -64px -96px;
+}
+
+input.ls_menu1, input.ls_menu1:hover {
+	background-position: -64px -128px;
+}
+
+input.ls_menu2, input.ls_menu2:hover {
+	background-position: -64px -160px;
+}
+
+input.ls_menu3, input.ls_menu3:hover {
+	background-position: -64px -192px;
+}
+
+input.ls_menu_input_align {
+    text-align: left;
+    font-size: 10px;
+    padding-right: 2px;
+    padding-left: 0px;
+}
