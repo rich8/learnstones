@@ -18,7 +18,7 @@ require_once 'google-api-php-client-master/src/Google/Client.php';
 class Learnstones_Plugin
 {
 
-	const LS_DB_VERSION = "0.63";
+	const LS_DB_VERSION = "0.66";
 
 	const LS_STYLES = "ls_menu0 ls_menu1 ls_menu2 ls_menu3";
 
@@ -163,7 +163,6 @@ class Learnstones_Plugin
     private $max_width = 640;
     private $settings_page;
     private $login_redirect;
-    private $redir = "XXXXX";
 
 	function __construct() {
 		add_action( 'init', array( $this, 'init' ) );
@@ -332,7 +331,7 @@ class Learnstones_Plugin
 
             if (isset($_POST[self::LS_FLD_CLEAR]))
             {
-                $this->clear_session(0, $this->session_id, TRUE, TRUE, $state, $class, $stone);    
+                $this->clear_session(0, FALSE, $this->session_id, TRUE, TRUE, $state, $class, $stone);    
             }
             else
             {
@@ -555,11 +554,11 @@ class Learnstones_Plugin
         {
             if(is_user_logged_in())
             {
-                $this->clear_session(get_current_user_id(), $this->session_id, TRUE, TRUE);                
+                $this->clear_session(get_current_user_id(), FALSE, $this->session_id, TRUE, TRUE);                
             }
             else
             {
-                $this->clear_session(0, $this->session_id, TRUE, TRUE);    
+                $this->clear_session(0, FALSE, $this->session_id, TRUE, TRUE);    
             }
         }
         elseif (!$this->session_valid)
@@ -616,7 +615,7 @@ class Learnstones_Plugin
 			        $wpdb->insert( $table_name,
 					        array(
                                 'user' => $user,
-						        'classid' => $class, //request
+						        'classid' => $class,
                                 'status' => 0
 					        ),
 					        array(
@@ -625,7 +624,11 @@ class Learnstones_Plugin
 						            "%d"
 					        )
 			        );
-                    $this->mark_session($this->session_id);
+
+                    if(!is_user_logged_in())
+                    {
+                        $this->mark_uv_input($this->session_id);
+                    }
                 }       
                 else
                 {
@@ -881,6 +884,7 @@ class Learnstones_Plugin
             $ret[$key] = $val;
             if($index == 1)
             {
+                $ret['author'] = "Author";        
                 $ret['post_name'] = "Class Id";        
             }
             $index ++;
@@ -890,9 +894,11 @@ class Learnstones_Plugin
 
     function manage_ls_class_posts_custom_column($column_name, $post_id)
     {
-        $post = get_post($post_id);
-        echo(strtoupper($post->post_name));
-
+        if($column_name == "post_name")
+        {
+            $post = get_post($post_id);
+            echo(strtoupper($post->post_name));       
+        }
     }
 
     function add_meta_boxes_ls_lesson()
@@ -1788,7 +1794,7 @@ class Learnstones_Plugin
  		}
         else
         {
-			$result['response'] = "Unauthorised access";
+			$result['response'] = "Unauthorised accessz";
         }
     	die(json_encode($result));
 	}
@@ -1798,7 +1804,7 @@ class Learnstones_Plugin
         global $wpdb;
 
 		if ( is_user_logged_in() && !wp_verify_nonce( $_POST['nonce'], self::LS_NONCE)) {
-			$result['response'] = "Unauthorised access";
+			$result['response'] = "Unauthorised access nonce";
 		}
         else
         {
@@ -1812,7 +1818,7 @@ class Learnstones_Plugin
                 $post_id = $_POST[self::LS_FLD_POST_ID];
                 if(!is_numeric($post_id))
                 {
-			        $result['response'] = "Unauthorised access";                    
+			        $result['response'] = "Unauthorised access:" . $post_id;                    
                 }
                 else if ($_POST['type'] == "merge")
                 {
@@ -1867,7 +1873,7 @@ class Learnstones_Plugin
                                     if($isUser || ($session != $user))
                                     {
                                         $this->merge_learnstone_data($session, $user, $isUser, FALSE);
-                                        $this->clear_session(0, $session, FALSE, FALSE);
+                                        $this->clear_session(0, FALSE, $session, FALSE, FALSE);
                                     }
                                 }
                                 $result = $this->get_json_for($post_id, '', $user, $isUser);
@@ -1894,6 +1900,155 @@ class Learnstones_Plugin
                         update_user_option(get_current_user_id(), self::LS_OPT_INPUT_DISP_SEL, $options);
                     }
 		        }
+		        elseif ($_POST['type'] == "remove" || $_POST['type'] == "purge") {
+                    $class = intval($_POST['classid']);
+                    $canremove = FALSE;
+                    $purge = ($_POST['type'] == "purge");
+                    if($class == -1)
+                    {
+                        $canremove = (get_post_field("post_author", $post_id ) == get_current_user_id());
+                    }
+                    else
+                    {
+                        $canremove = (get_post_field("post_author", $class ) == get_current_user_id());                
+                    }
+
+                    if($canremove)
+                    {
+                        $time = current_time('mysql');
+                        $sessions = array();
+                        foreach($_POST['removes'] as $remove)
+                        {
+                            $isSession = FALSE;
+                            $session = 0;
+                            $uvinput = 0;
+                            $suffix = "";
+                            if(strpos($remove, "session") === 0)
+                            {
+                                $isSession = TRUE;
+                                $session = intval(substr($remove, 7));
+                                $suffix = self::LS_TBL_SESSION_SFX;
+                            }
+                            elseif (strpos($remove, "user") === 0)
+                            {
+                                $session = intval(substr($remove, 4));
+                                $table_name = $wpdb->prefix . self::LS_TBL_SESSION;
+                                $wpdb->update($table_name, array('classid' => 0), array('user' => $session, 'classid' => $class), array("%d"), array("%d","%d"));
+                                $wpdb->update($table_name, array('dbupdate' => $time, 'time' => $time), array('user' => $session), array("%s","%s"), array("%d"));
+                            }
+                            
+                            $table_name = $wpdb->prefix . self::LS_TBL_CLASSES . $suffix;
+                            if($class != -1)
+                            {
+                                $sql = $wpdb->prepare("DELETE FROM $table_name WHERE user=%d AND classid=%d", array($session, $class));
+                            }
+                            else
+                            {
+                                $sql = $wpdb->prepare("DELETE $table_name FROM $table_name LEFT JOIN {$wpdb->posts} ON classid=ID WHERE user=%d AND classid=%d AND post_author=%d", array($session, $class, get_current_user_id()));
+                            }
+                            $wpdb->query($sql);
+
+                            if($purge)
+                            {
+                                // See if lesson is in any classes
+                                if(!$this->is_in_anothers_class($post_id))
+                                {
+                                    $table_name = $wpdb->prefix . self::LS_TBL_RESPONSES . $suffix;
+                                    $sql = $wpdb->prepare("DELETE FROM $table_name WHERE post=%d AND user=%d", array($post_id, $session));
+                                    $wpdb->query($sql);                                
+
+                                    $table_name = $wpdb->prefix . self::LS_TBL_INPUTS . $suffix;
+                                    $sql = $wpdb->prepare("DELETE FROM $table_name WHERE post=%d AND user=%d", array($post_id, $session));
+                                    $wpdb->query($sql);                                
+                                }
+                            }
+
+                            if($isSession)
+                            {
+                                $table_name = $wpdb->prefix . self::LS_TBL_RESPONSES . self::LS_TBL_SESSION_SFX;
+                                $sql = $wpdb->prepare("SELECT * FROM $table_name WHERE user=%d LIMIT 1", array($session));
+                                $uvinput_row = $wpdb->get_row($sql);
+
+                                if($uvinput_row != NULL)
+                                {
+                                    $uvinput = 1;
+                                }
+                                else
+                                {
+                                    $table_name = $wpdb->prefix . self::LS_TBL_INPUTS . self::LS_TBL_SESSION_SFX;
+                                    $sql = $wpdb->prepare("SELECT * FROM $table_name WHERE user=%d LIMIT 1", array($session));
+                                    $uvinput_row = $wpdb->get_row($sql);
+
+                                    if($uvinput_row != NULL)
+                                    {
+                                        $uvinput = 1;
+                                    }                                    
+                                }
+
+                                if($uvinput == 0)
+                                {
+                                    $table_name2 = $wpdb->prefix . self::LS_TBL_COURSES;
+                                    $sql = $wpdb->prepare("SELECT * FROM $table_name LEFT JOIN $table_name2 ON post=parent WHERE user=%d AND child=%d LIMIT 1", array($session,$post_id));
+                                    $uvinput_row = $wpdb->get_row($sql);
+                                    if($uvinput_row != NULL)
+                                    {
+                                        $uvinput = 1;
+                                    }
+                                }
+
+                                $table_name = $wpdb->prefix . self::LS_TBL_SESSION;
+                                $wpdb->update($table_name, array('classid' => 0), array('id' => $session, 'classid' => $class), array("%d"), array("%d","%d"));
+                                $wpdb->update($table_name, array('dbupdate' => $time, 'time' => $time, 'uvinput' => $uvinput), array('id' => $session), array("%s","%s","%d"), array("%d"));
+
+                                // add for recheck;
+                                if($uvinput)
+                                {
+                                    $sessions['session' . $session] = $session;
+                                }   
+                            }
+                            else
+                            {
+                                $sessions['user' . $session] = $session;
+                            }
+                        }
+                        $latest = $_POST['from'];
+                        $result = $this->get_json_for($post_id, $latest);
+                        foreach($sessions as $key => $session)
+                        {
+                            if(!isset($result['session'][$key]))
+                            {
+                                $suffix = "";
+                                if(strpos($key, 'session') === 0)
+                                {
+                                    $suffix = self::LS_TBL_SESSION_SFX;
+                                }
+                                $table_name = $wpdb->prefix . self::LS_TBL_RESPONSES . $suffix;
+                                $sql = $wpdb->prepare("SELECT * FROM $table_name WHERE post=%d AND user=%d LIMIT 1", array($post_id, $session));
+                                $uvinput_row = $wpdb->get_row($sql);
+
+                                if($uvinput_row != NULL)
+                                {
+                                        $result['session'][$key] = array($key, "", "||", $time);
+                                }
+                                else
+                                {
+                                    $table_name = $wpdb->prefix . self::LS_TBL_INPUTS . $suffix;
+                                    $sql = $wpdb->prepare("SELECT * FROM $table_name WHERE post=%d AND user=%d LIMIT 1", array($post_id, $session));
+                                    $uvinput_row = $wpdb->get_row($sql);
+
+                                    if($uvinput_row != NULL)
+                                    {
+                                        $result['session'][$key] = array($key, "", "||", $time);
+                                    }                                    
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        $result['response'] = 'Remove failed because you are not class owner';
+                    }
+                }
 		        elseif($_POST['type'] == "sub")
 		        {
 			        $author_id = get_post_field("post_author", $post_id );
@@ -2142,7 +2297,7 @@ class Learnstones_Plugin
             $this->merge_learnstone_data($this->session_id, $user->ID, TRUE, TRUE);
         }
 
-        $this->clear_session($user->ID, $this->session_id, TRUE, TRUE);
+        $this->clear_session($user->ID, TRUE, $this->session_id, TRUE, TRUE);
 	}
 
     function merge_learnstone_data($session, $userOrSession, $isUser, $mergeCurrentClass)
@@ -2193,7 +2348,7 @@ class Learnstones_Plugin
 
     }
 
-    function clear_session($user, $session, $localSession, $isValid, $state = FALSE, $class = 0, $stone = 0)
+    function clear_session($user, $login, $session, $localSession, $isValid, $state = FALSE, $class = 0, $stone = 0)
     {
         
         global $wpdb;
@@ -2262,6 +2417,18 @@ class Learnstones_Plugin
             $update_fields['uvname'] = $current_user->display_name;
             $update_format[] = "%s";            
         }
+
+        if(($user == 0 && !$login) || ($user != 0 && $login))
+        {
+           $login_time = '0000-00-00 00:00:00';
+           if($login)
+           {
+               $login_time = $time;
+           }
+           $update_fields['login'] = $login_time;
+           $update_format[] = "%s";
+        }
+
 		$wpdb->update(
 			$table_name,
 			$update_fields,
@@ -2281,7 +2448,7 @@ class Learnstones_Plugin
         }
     }
 
-    function mark_session($session)
+    function mark_uv_input($session)
     {
         global $wpdb;
 
@@ -2319,7 +2486,7 @@ class Learnstones_Plugin
 	{
         global $wpdb;
         $this->get_session();   
-        $this->clear_session(0, $this->session_id, TRUE, TRUE);
+        $this->clear_session(0, FALSE, $this->session_id, TRUE, TRUE);
         if(!isset($_GET['redirect_to']))
         {
             wp_redirect(home_url('?' . self::LS_FLD_LOGGEDOUT . '=true'));
@@ -2388,8 +2555,11 @@ class Learnstones_Plugin
                     service mediumint(5) DEFAULT 0,
                     stone bigint(5) DEFAULT 0,
 					dbupdate datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+					login datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
 					UNIQUE KEY id (id),
-                    KEY dbupdate_key (dbupdate)
+                    KEY dbupdate_key (dbupdate),
+                    KEY user_key (user,classid),
+                    KEY classid_key (classid)
 				);";
 			dbDelta( $sql );
 
@@ -2425,13 +2595,14 @@ class Learnstones_Plugin
 					    post bigint(20),
 					    user bigint(20),
 					    stone bigint(20),
-					    history BLOB,
+					    history LONGTEXT,
                         value mediumint(20),
 					    time datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+    					dbupdate datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
 					    UNIQUE KEY id (id),
 					    KEY stone_key (post,user,stone),
 					    KEY user_key (user,stone),
-					    KEY time_key (post,time)
+					    KEY update_key (post,dbupdate)
 				    );";
 			    dbDelta( $sql );
 
@@ -2447,16 +2618,17 @@ class Learnstones_Plugin
 
 	   		    $table_name = $wpdb->prefix . self::LS_TBL_INPUTS . $suffix;
 			    $sql = "CREATE TABLE $table_name (
-					    id bigint(20) NOTre NULL AUTO_INCREMENT,
+					    id bigint(20) NOT NULL AUTO_INCREMENT,
                         post bigint(20),
 					    user bigint(20),
                         field varchar(20),
 					    time datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
-					    history BLOB,
+    					dbupdate datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+					    history LONGTEXT,
                         value varchar(255),
 					    UNIQUE KEY id (id),
 					    KEY user_key (post,user,field),
-					    KEY time_key (post,time)
+					    KEY update_key (post,dbupdate)
 				    );";
 			    dbDelta( $sql );
             }
@@ -2603,7 +2775,7 @@ class Learnstones_Plugin
         if(!$isUser)
         {
             $table_name .= self::LS_TBL_SESSION_SFX;
-            $this->mark_session($userOrSession);
+            $this->mark_uv_input($userOrSession);
         }
         
 
@@ -2664,21 +2836,23 @@ class Learnstones_Plugin
                                     array('post' => $post_id,
                                             'user' => $userOrSession,
                                             'field'=> $field,
-                                            'time' => current_time('mysql'),
                                             'history' => serialize($newIn),
-                                            'value' => end($in)),
-                                    array("%d","%d","%s","%s","%s", "%s"));                
+                                            'value' => end($newIn),
+                                            'time' => key($newIn),
+                                            'dbupdate' => current_time('mysql')),
+                                    array("%d","%d","%s","%s","%s", "%s", "%s"));                
                 }
                 else
                 {
                     $wpdb->update($table_name,
                                     array('history' => serialize($newIn),
-                                        'time' => current_time('mysql'),
-                                        'value' => end($in)),
+                                        'dbupdate' => current_time('mysql'),
+                                        'value' => end($newIn),
+                                        'time' => key($newIn)),
                                     array(
                                         'id' => $row->id
                                     ),
-                                    array("%s","%s","%s"),
+                                    array("%s","%s","%s", "%s"),
                                     array("%d"));
                 }
             }
@@ -2694,7 +2868,7 @@ class Learnstones_Plugin
 		if(!$isUser)
 		{
             $suffix = self::LS_TBL_SESSION_SFX;
-            $this->mark_session($userOrSession);
+            $this->mark_uv_input($userOrSession);
         }
 
 		$table_name = $wpdb->prefix . self::LS_TBL_RESPONSES . $suffix;
@@ -2713,9 +2887,10 @@ class Learnstones_Plugin
 				    'post' => $post_id,
 				    'user' => $userOrSession,
 				    'stone' => $learnstone,
-    			    'time' => current_time('mysql'),
+    			    'time' => $t,
                     'history' => serialize(array($t => $response )),
-                    'value' => $response
+                    'value' => $response,
+                    'dbupdate' => current_time('mysql')
 			    ),
 			    array(
 				    "%d",
@@ -2723,7 +2898,8 @@ class Learnstones_Plugin
 				    "%d",
 				    "%s",
 				    "%s",
-                    "%d"
+                    "%d",
+                    "%s"
 			    )
 		    );
         }
@@ -3041,17 +3217,16 @@ class Learnstones_Plugin
                         $ret .= '<li><a id="ls_db_stream" href="#">Learnstream</a></li>';
                         $ret .= "<li><a id='ls_change' href='#'>Display</a></li>";
                         $ret .= "<li><a id='ls_manage' href='#'>Management</a></li>";
-                        $ret .= "</ul>";
 
                         $classes = array();
                         $this->get_classes( get_the_ID(), $classes );
-
-                        $dops = "<div id='ls_dops'><p>Filter students by class: <select id='ls_filter' name='ls_filter'>";
-                        $dops .= "<option value='-1'>(Any)</option>";
+                        
+                        $ret .= "<li>Filter: <select id='ls_filter' name='ls_filter'>";
+                        $ret .= "<option value='-1'>(Any Class)</option>";
                         $curClassName = "";
                         if(count($classes) > 0)
                         {
-                            $authorClasses = $wpdb->get_results("SELECT ID,post_name,post_title FROM {$wpdb->posts} WHERE ID IN (" . implode( ",", $classes) . ") AND post_author=$user AND post_type='" . self::LS_TYPE_CLASS . "' AND post_status='publish' ORDER BY post_content", OBJECT_K);
+                            $authorClasses = $wpdb->get_results("SELECT ID,post_name,post_title FROM {$wpdb->posts} WHERE ID IN (" . implode( ",", $classes) . ") AND post_author=$user AND post_type='" . self::LS_TYPE_CLASS . "' AND post_status='publish' ORDER BY post_name", OBJECT_K);
                             $curclass = -1;
                             if(isset($_GET[self::LS_FLD_CLASS_NO]))
                             {
@@ -3066,11 +3241,15 @@ class Learnstones_Plugin
                                     $selected = " selected='true' ";
                                     $curClassName = esc_html(strtoupper($class->post_name));
                                 }
-                                $dops .= "<option value='" . esc_attr($class->ID) . "' $selected>" . esc_html(strtoupper($class->post_name)) . " - " . esc_html($class->post_title) . "</option>";
+                                $ret .= "<option value='" . esc_attr($class->ID) . "' $selected>" . esc_html(strtoupper($class->post_name)) . " - " . esc_html($class->post_title) . "</option>";
                             }
                         }
-                        $dops .= "</select>";
-                        $dops .= get_submit_button(__('Filter'), 'secondary', 'ls_filter_but', FALSE );
+                        $ret .= "</select>";
+                        $ret .= get_submit_button(__('Filter'), 'secondary', 'ls_filter_but', FALSE );
+                        $ret .= "</li>";
+                        $ret .= "</ul>";
+
+                        $dops = "<div id='ls_dops'>";
 
                         $doptions = get_option(self::LS_OPTIONS);
                         $values = array("(None)" => array(self::LS_TOK_INPUT, 0), "(URL)" => array(self::LS_TOK_INPUT , 1));
@@ -3139,7 +3318,8 @@ class Learnstones_Plugin
                             $cls = '';
                         }
                         $ret .= "<p id='ls_p_remove_class' class='$cls'>" . get_submit_button( __('Remove'), 'secondary', 'ls_remove', FALSE, array('id' => 'ls_remove') ) . " ticked users from &quot;<span id='ls_remove_class'>" . $curClassName . "</span>&quot;</p>";
-                        $ret .= "<p>" . get_submit_button( __('Purge'), 'secondary', 'ls_purge', FALSE, array('id' => 'ls_purge') ) . " ticked users inputs from lesson</p>";
+                        $ret .= "<input type='hidden' name='ls_purge_owner' id='ls_purge_owner' value='" . ($post->post_author == get_current_user_id() ? "1" : "0") . "' />";
+                        $ret .= "<p id='ls_p_purge'>" . get_submit_button( __('Purge'), 'secondary', 'ls_purge', FALSE, array('id' => 'ls_purge') ) . " ticked users lesson data and remove from class</p>";
                         $ret .= "</div>";
               
                         $rows = $this->get_recent_responses(get_the_ID(), $classes);
@@ -3423,7 +3603,7 @@ class Learnstones_Plugin
                                 $ret .=     "<ul class='ls_loginmenu'>";
                                 $ret .=         "<li class='ls_title'>Lesson:" . get_the_title() . "</li>";
                                 $ret .= $classOutput;
-                                $ret .=         "<li class='$classLogin'><input type='hidden' name='post_id' value='" . get_the_ID() . "' /><input type='hidden' name='" . self::LS_FLD_STONE . "' value='' /><input name='ls_username' class='ls_username ls_ph' type='text' placeholder='" . __('Learnstones User') . "' value='" . esc_attr($this->session_name) . "'/><div class='ls_loginphide'>Please login to keep your results</div>&nbsp;<input name='ls_password' class='ls_password ls_ph' type='password' placeholder='" . __('Learnstones Password') . "'/>";
+                                $ret .=         "<li class='$classLogin'><input type='hidden' name='post_id' value='" . get_the_ID() . "' /><input type='hidden' name='" . self::LS_FLD_STONE . "' value='' /><input name='ls_username' class='ls_username ls_ph' type='text' placeholder='" . __('Learnstones User') . "' value='" . esc_attr($this->session_name) . "'/><div class='ls_loginphide'>Please login to keep your results</div>&nbsp;<input name='ls_password' class='ls_password ls_ph' type='password' placeholder='" . __('Learnstones Password') . "'/>&nbsp;";
                                 $ret .= get_submit_button( __('Login'), 'secondary', 'ls_login', FALSE, array('id' => 'ls_login') ) . "</li>";
                                 $options = get_option(self::LS_OPTIONS);
                                 if(isset($options[self::LS_OPT_GOOGLE_CLIENT_ID]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID])) {
@@ -3740,6 +3920,36 @@ class Learnstones_Plugin
         }
     }
 
+    function is_in_anothers_class( $id )
+    {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . self::LS_TBL_COURSES;
+        $sql = $wpdb->prepare("SELECT parent FROM $table_name WHERE child=%d ", $id);
+        $items = $wpdb->get_results($sql, OBJECT);
+        $user_id = get_current_user_id();
+        foreach($items as $item)
+        {
+            if(get_post_type($item->parent) == self::LS_TYPE_CLASS)
+            {
+                //need to check current user is not author of class too
+                if(get_post_field('post_author', $item->parent) != $user_id)
+                {
+                    return TRUE;
+                }
+            }
+            else
+            {
+                if($this->is_in_anothers_class( $item->parent ))
+                {
+                    return TRUE;   
+                }
+            }
+        }
+
+        return FALSE;
+    }
+
 
     function get_lessons( $id, $level, &$current, $maxdepth )
     {
@@ -3892,7 +4102,7 @@ class Learnstones_Plugin
         if(!empty($from))
         {
             $table_name = $wpdb->prefix . self::LS_TBL_SESSION;
-            $sql = $wpdb->prepare("SELECT id,time,dbupdate,user,uvname FROM $table_name WHERE dbupdate>%s", array($from));
+            $sql = $wpdb->prepare("SELECT id,time,dbupdate,user,uvname,login FROM $table_name WHERE dbupdate>%s", array($from));
             $sessions = $wpdb->get_results($sql);
             foreach($sessions as $session)
             {
@@ -3908,16 +4118,19 @@ class Learnstones_Plugin
                 if($session->user == 0)
                 {
                     $ss[] = $session->id;
+                    // UV user joined a class (user = 0)
+                    $ns["session" . $session->id] = array($session->user, $name, $session->time);
                 }
                 else
                 {
                     $us[] = $session->user;
                     //  Logged in user has joined a class
                     $ns["user" . $session->user] = array($session->id, $name, $session->time);
+                    if($session->login > $from)
+                    {
+                        $ns["session" . $session->id] = array($session->user, $name, $session->time);
+                    }
                 }
-
-                // UV user has logged in (user != 0) or joined a class (user = 0)
-                $ns["session" . $session->id] = array($session->user, $name, $session->time);
             }
         }
 
@@ -3955,7 +4168,7 @@ class Learnstones_Plugin
             if(!empty($from))
             {
                 $args[] = $from;
-                $sql2 .= " AND time>%s";
+                $sql2 .= " AND dbupdate>%s";
             }
             $sql2 .= " ORDER BY user, stone, time";
             $sql2 = $wpdb->prepare($sql2, $args);
@@ -3991,7 +4204,7 @@ class Learnstones_Plugin
             }
             if(!empty($from))
             {
-                $sql3 .= " AND time>%s";
+                $sql3 .= " AND dbupdate>%s";
                 $args[] = $from;
             }
 
@@ -4027,7 +4240,7 @@ class Learnstones_Plugin
 
             // if there are updated sessions (AND user in implode session.user ) or first time through 
             $table_name = $wpdb->prefix . self::LS_TBL_CLASSES . $suffix;
-            $sql1 = "SELECT user, classid FROM $table_name WHERE classid IN ("  . implode(",", $classes ) . ")";
+            $sql1 = "SELECT user, classid FROM $table_name WHERE classid IN ("  . implode(",", $classes ) . ") ";
             $exec = empty($from);
             if(!empty($where))
             {
@@ -4036,17 +4249,33 @@ class Learnstones_Plugin
             elseif ($key == "session" && count($ss) > 0)
             {
                 $exec = TRUE;
-                $sql1 .= "AND user IN (" . implode(",", $ss) . ")";
+                if(count($ss) == 1)
+                {
+                    $sql1 .= "AND user = " . $ss[0];                    
+                }
+                else
+                {
+                    $sql1 .= "AND user IN (" . implode(",", $ss) . ") ";
+                }
             }
             elseif ($key == "user" && count($us) > 0)
             {
                 $exec = TRUE;
-                $sql1 .= "AND user IN (" . implode(",", $us) . ")";
+                if(count($us) == 1)
+                {
+                    $sql1 .= "AND user = " . $us[0];                    
+                }
+                else
+                {
+                    $sql1 .= "AND user IN (" . implode(",", $us) . ") ";
+                }
             }
+ 
 
             $uclasses = array();
             if($exec)
             {
+
                 $userClasses = $wpdb->get_results($sql1);
 
                 foreach($userClasses as $userClass)
@@ -4112,7 +4341,10 @@ class Learnstones_Plugin
                 //If classes found for user
                 if($exec)
                 {
-                    $rows['users'][$user_key]['classes'] = array();  
+                    if(!isset($rows['users'][$user_key]['classes']))
+                    {
+                        $rows['users'][$user_key]['classes'] = array();
+                    }
                     if(isset($uclasses[$user_key]))
                     {
                         $rows['users'][$user_key]['classes'] = $uclasses[$user_key];
@@ -4157,10 +4389,12 @@ class Learnstones_Plugin
         {
             foreach($rows['users'] as $key => $row)
             {
+
                 //Check this user has a session?
                 if(!isset($result['session'][$key]))
                 {
                     $result['session'][$key] = array();
+                    $result['session'][$key][0] = $key;
                 }
                 if (isset($row['session']))
                 {
@@ -4191,8 +4425,7 @@ class Learnstones_Plugin
         $result['latest'] = $rows['latest']['time'];
         $result['inputs'] = array_values($rows['latest']['inputs']);                        
  		$result['response'] = "ok";
-        //$result['debug'] = $rows['debug'];                    
-    	return $result;
+     	return $result;
         
     }
 

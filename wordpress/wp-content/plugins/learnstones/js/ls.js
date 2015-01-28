@@ -58,10 +58,55 @@
         }
     }
 
-    ls.remove = function () {
-    }
-
-    ls.purge = function () {
+    ls.remove = function (purge) {
+        var action = "remove";
+        if (purge) {
+            action = "purge";
+        }
+        var chks = $('#ls_dashboard :checked');
+        if (chks.length == 0) {
+            alert('No sessions or users selected');
+        }
+        else if ((action == "remove") && $('#ls_filter option:selected').val() == -1) {
+            alert('No class selected');
+        }
+        else if (window.confirm('Are you sure you want to ' + action + ' ' + chks.length + ' users/sessions?')) {
+            var removes = [];
+            for (var chk = 0; chk < chks.length; chk++) {
+                removes.push(chks[chk].id.substring(4));
+            }
+            $.ajax({
+                type: "post",
+                dataType: "json",
+                url: lsAjax.ajaxurl,
+                data: { action: "ls_submission", type: action, post_id: lsAjax.post_id, from: $('#ls_dashboard_time').val(), classid: $('#ls_filter option:selected').val(), nonce: lsAjax.nonce, removes: removes },
+                success: function (response) {
+                    if (response.response == 'ok') {
+                        ls.input_responses(response, false);
+                        for (var chk = 0; chk < removes.length; chk++) {
+                            if (response.session) {
+                                if (typeof response.session[removes[chk]] === 'undefined') {
+                                    $('#' + removes[chk]).remove();
+                                }
+                                else {
+                                    $('#lsc_' + removes[chk]).prop('checked', false);
+                                }
+                            }
+                            else {
+                                $('#' + removes[chk]).remove();
+                            }
+                        }
+                        ls.db_filter(1);
+                    }
+                    else {
+                        alert(response.response);
+                    }
+                },
+                error: function (a, b, c) {
+                    alert("error:" + a + "," + b + "," + c);
+                }
+            });
+        }
     }
 
     ls.set_time = function (cell, time) {
@@ -279,17 +324,19 @@
 
                     var nameChange = false;
 
-                    var nameTd = $('#' + update + " .ls_db_name");
-                    if (nameTd.length) {
-                        if (nameTd.text() != name) {
-                            nameChange = true;
+                    if (name.length > 0) {
+                        var nameTd = $('#' + update + " .ls_db_name");
+                        if (nameTd.length) {
+                            if (nameTd.text() != name) {
+                                nameChange = true;
+                            }
                         }
-                    }
 
-                    nameTd = $('#' + id + " .ls_db_name");
-                    if (nameTd.length) {
-                        if (nameTd.text() != name) {
-                            nameChange = true;
+                        nameTd = $('#' + id + " .ls_db_name");
+                        if (nameTd.length) {
+                            if (nameTd.text() != name) {
+                                nameChange = true;
+                            }
                         }
                     }
 
@@ -310,13 +357,15 @@
                             if (classes && ($('#' + update).data('class') != classes)) {
                                 $('#' + update).data('class', classes);
                             }
-                            var row = $('#' + id);
-                            row.insertBefore($('#ls_dashboard ' + bef).eq(0).parent());
-                            $('#ls_dashboard .ls_db_name').each(function () {
-                                if ($(this).text().toLowerCase() < name.toLowerCase()) {
-                                    row.insertAfter($(this).parent());
-                                }
-                            });
+                            if (name.length > 0) {
+                                var row = $('#' + id);
+                                row.insertBefore($('#ls_dashboard ' + bef).eq(0).parent());
+                                $('#ls_dashboard .ls_db_name').each(function () {
+                                    if ($(this).text().toLowerCase() < name.toLowerCase()) {
+                                        row.insertAfter($(this).parent());
+                                    }
+                                });
+                            }
                         }
                     }
                     // New user
@@ -577,6 +626,7 @@
             url: lsAjax.ajaxurl,
             data: { action: "ls_submission", type: "dashboard", post_id: lsAjax.post_id, nonce: lsAjax.nonce, from: $('#ls_dashboard_time').val() },
             success: function (response) {
+                //alert(response);
                 ls.input_responses(response, true);
             },
             error: function (a, b, c) {
@@ -608,9 +658,16 @@
         var val = $('#ls_filter').val();
         if (val != -1) {
             $('#ls_p_remove_class').show();
+            $('#ls_p_purge').show();
             $('#ls_remove_class').html(ls.escape_html($('#ls_filter option:selected').text()));
         }
         else {
+            if ($('#ls_purge_owner').val() == 1) {
+                $('#ls_p_purge').show();
+            }
+            else {
+                $('#ls_p_purge').hide();
+            }
             $('#ls_p_remove_class').hide();
         }
         var line = 1;
@@ -720,11 +777,11 @@
             });
             $('#ls_remove').on('click', function (e) {
                 e.preventDefault();
-                ls.remove();
+                ls.remove(false);
             });
             $('#ls_purge').on('click', function (e) {
                 e.preventDefault();
-                ls.purge();
+                ls.remove(true);
             });
 
             $('select[name^=lsf_]').change(function (e) {
