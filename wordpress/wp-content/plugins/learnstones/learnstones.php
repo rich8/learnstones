@@ -2008,7 +2008,7 @@ class Learnstones_Plugin
                             }
                             elseif (strpos($remove, "user") === 0)
                             {
-                                $session = intval(substr($remove, 4))
+                                $session = intval(substr($remove, 4));
                                 if(($class == -1) || (get_user_option(self::LS_OPT_CLASS, $session) == $class))
                                 {
                                     update_user_option($session, self::LS_OPT_CLASS, 0);
