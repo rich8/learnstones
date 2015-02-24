@@ -34,12 +34,7 @@
                                 for (var chk = 0; chk < merges.length; chk++) {
                                     if (merges[chk] != update) {
                                         $('#' + merges[chk]).remove();
-                                        $('#ls_stream tr').each(function () {
-                                            if ($(this).data('user') == id) {
-                                                $(this).data('user', update);
-                                                $(this).find('td').eq(1).html(ls.escape_html(name));
-                                            }
-                                        });
+
                                     }
                                     else {
                                         $('#lsc_' + update).prop('checked', false);
@@ -51,7 +46,7 @@
                         ls.input_responses(response, false);
                     },
                     error: function (a, b, c) {
-                        alert(a + "," + b + "," + c);
+                        alert(a.responseText + "," + b + "," + c);
                     }
                 });
             }
@@ -67,9 +62,6 @@
         if (chks.length == 0) {
             alert('No sessions or users selected');
         }
-        else if ((action == "remove") && $('#ls_filter option:selected').val() == -1) {
-            alert('No class selected');
-        }
         else if (window.confirm('Are you sure you want to ' + action + ' ' + chks.length + ' users/sessions?')) {
             var removes = [];
             for (var chk = 0; chk < chks.length; chk++) {
@@ -81,19 +73,13 @@
                 url: lsAjax.ajaxurl,
                 data: { action: "ls_submission", type: action, post_id: lsAjax.post_id, from: $('#ls_dashboard_time').val(), classid: $('#ls_filter option:selected').val(), nonce: lsAjax.nonce, removes: removes },
                 success: function (response) {
+                    //$('#debug').text($('#debug').text() + "\n" + response.debug);
                     if (response.response == 'ok') {
                         ls.input_responses(response, false);
                         for (var chk = 0; chk < removes.length; chk++) {
-                            if (response.session) {
-                                if (typeof response.session[removes[chk]] === 'undefined') {
-                                    $('#' + removes[chk]).remove();
-                                }
-                                else {
-                                    $('#lsc_' + removes[chk]).prop('checked', false);
-                                }
-                            }
-                            else {
-                                $('#' + removes[chk]).remove();
+                            var chkb = $('#lsc_' + removes[chk]);
+                            if (chkb.length) {
+                                chkb.prop('checked', false);
                             }
                         }
                         ls.db_filter(1);
@@ -103,7 +89,7 @@
                     }
                 },
                 error: function (a, b, c) {
-                    alert("error:" + a + "," + b + "," + c);
+                    alert("error:" + a.responseText + "," + b + "," + c);
                 }
             });
         }
@@ -111,7 +97,11 @@
 
     ls.set_time = function (cell, time) {
         var fmt = time;
-        if (time != "-") {
+        if (time == "--") {
+            // No input time known as event occurred after last input
+            return;
+        }
+        else if (time != "-") {
             var date1 = new Date(time.substr(0, 10));
             var date2 = new Date();
             if (date1.getDay() === date2.getDay() && date1.getMonth() === date2.getMonth() && date1.getYear() === date2.getYear()) {
@@ -152,7 +142,7 @@
                     }
                 },
                 error: function (a, b, c) {
-                    alert("error:" + a + "," + b + "," + c);
+                    alert("error:" + a.responseText + "," + b + "," + c);
                 }
             });
         }
@@ -307,9 +297,13 @@
         });
     }
 
+    count = 0;
+
     ls.input_responses = function (response, updateStream) {
         var filter = 0;
         if (response.response == "ok") {
+            //$('#debug').text(count + ":" + response.latest);
+            count++;
             if (response.session) {
                 var bef = '.ls_db_name';
                 if ($('#ls_dashboard ' + bef).length == 0) {
@@ -317,130 +311,146 @@
                 }
                 for (var update in response.session) {
                     var id = response.session[update][0];
-                    var name = response.session[update][1];
                     var classes = response.session[update][2];
-                    var time = response.session[update][3];
-                    var add = false;
-
-                    var nameChange = false;
-
-                    if (name.length > 0) {
-                        var nameTd = $('#' + update + " .ls_db_name");
-                        if (nameTd.length) {
-                            if (nameTd.text() != name) {
-                                nameChange = true;
-                            }
-                        }
-
-                        nameTd = $('#' + id + " .ls_db_name");
-                        if (nameTd.length) {
-                            if (nameTd.text() != name) {
-                                nameChange = true;
-                            }
-                        }
-                    }
-
-                    //alert(id + "," + name + ",to:" + update);
-                    // User already listed
-                    if ($('#' + update).length > 0) {
-                        if (update != id) {
-                            $('#' + id).remove();
-                            if (classes) {
-                                $('#' + update).data('class', classes);
-                                filter = 1;
-                            }
-                            ls.set_time(update, time);
-                        }
-                        else {
-                            filter = 1;
-                            ls.set_time(id, time);
-                            if (classes && ($('#' + update).data('class') != classes)) {
-                                $('#' + update).data('class', classes);
-                            }
-                            if (name.length > 0) {
-                                var row = $('#' + id);
-                                row.insertBefore($('#ls_dashboard ' + bef).eq(0).parent());
-                                $('#ls_dashboard .ls_db_name').each(function () {
-                                    if ($(this).text().toLowerCase() < name.toLowerCase()) {
-                                        row.insertAfter($(this).parent());
-                                    }
-                                });
-                            }
-                        }
-                    }
-                    // New user
-                    else if (update == id) {
-                        add = true;
-                    }
-                    // Newly logged in user previously listed
-                    else if ($('#' + id).length > 0) {
-                        ls.set_time(id, time);
-                        $('#' + id).prop('id', update);
-                        $('#lsc_' + id).prop('id', 'lsc_' + update);
-                        $('#' + id).data('class', classes);
-                        $('#ls_dashboard th').each(function () {
-                            var lsid = $(this).data('ls');
-                            $("#" + id + lsid).prop('id', update + lsid);
-                        });
-                    }
-                    else {
-                        add = true;
-                    }
-
-                    if (nameChange) {
-                        $('#' + id + " .ls_db_name").html(ls.escape_html(name));
+                    if (id == 'deleted') {
+                        $('#' + update).remove();
                         $('#ls_stream tr').each(function () {
-                            if ($(this).data('user') == id) {
-                                $(this).data('user', update);
-                                $(this).find('td').eq(1).html(ls.escape_html(name));
-                            }
-                        });
-                    }
-
-                    if (add) {
-                        var row = $("<tr id='" + update + "' class='ls_db_show' data-class='" + classes + "'></tr>");
-                        var cl = '';
-                        if (update.indexOf('session') == 0) {
-                            cl = ' class="ls_db_session" ';
-                        }
-                        row.append($('<td ' + cl + '><input type="checkbox" name="lsc_' + update + '" id="lsc_' + update + '"/></td>'));
-                        row.append($("<td class='ls_db_name'>" + name + "</td>"));
-                        row.append($("<td data-time='" + time + "' class='ls_db_time'></td>"));
-                        var ind = 0;
-                        $('#ls_dashboard th').each(function () {
-                            if (ind >= 3) {
-                                var cell = $("<td></td>");
-                                if ($(this).data('input')) {
-                                    cell.data('input', '');
-                                    if ($(this).hasClass('ls_db_input_hide')) {
-                                        cell.addClass('ls_db_input_hide');
-                                    }
-                                    else {
-                                        cell.addClass('ls_db_input_show');
-                                    }
-                                    row.append(cell);
-                                }
-                                else {
-                                    var link = $("<span>&nbsp;</span>");
-                                    if ($(this).data('hasinput')) {
-                                        link = $("<a class='ls_db_input_a ls_db_input_a_empty'>&#133;</a>").on('click', function (e) {
-                                            ls.db_toggle_input($(this));
-                                        });
-                                    }
-
-                                    var sp = $("<span class='ls_respspan ls_resp0'></span>").prop('id', update + $(this).data('ls')).append(link);
-                                    row.append(cell.append(sp));
-                                }
-                            }
-                            ind++;
-                        });
-                        row.insertBefore($('#ls_dashboard ' + bef).eq(0).parent());
-                        $('#ls_dashboard .ls_db_name').each(function () {
-                            if ($(this).text().toLowerCase() < name.toLowerCase()) {
-                                row.insertAfter($(this).parent());
+                            if ($(this).data('user') == update) {
+                                $(this).remove();
                             }
                         });
                         filter = 1;
+                    }
+                    else {
+                        var name = response.session[update][1];
+                        var classes = response.session[update][2];
+                        var time = response.session[update][3];
+                        var add = false;
+                        var nameChange = false;
+
+                        if (name.length > 0) {
+                            var nameTd = $('#' + update + " .ls_db_name");
+                            if (nameTd.length) {
+                                if (nameTd.text() != name) {
+                                    nameChange = true;
+                                }
+                            }
+
+                            nameTd = $('#' + id + " .ls_db_name");
+                            if (nameTd.length) {
+                                if (nameTd.text() != name) {
+                                    nameChange = true;
+                                }
+                            }
+                        }
+
+                        //alert(id + "," + name + ",to:" + update);
+                        // User already listed
+                        if ($('#' + update).length > 0) {
+                            if (update != id) {
+                                $('#' + id).remove();
+                                if (classes) {
+                                    $('#' + update).data('class', classes);
+                                    if (update.indexOf('user') == 0) {
+                                        $('#' + update).find('td').eq(0).removeClass().addClass('ls_db_user');
+                                    }
+                                    filter = 1;
+                                }
+                                ls.set_time(update, time);
+                            }
+                            else {
+                                filter = 1;
+                                ls.set_time(id, time);
+                                if (classes && ($('#' + update).data('class') != classes)) {
+                                    $('#' + update).data('class', classes);
+                                }
+                                if (name.length > 0) {
+                                    var row = $('#' + id);
+                                    row.insertBefore($('#ls_dashboard ' + bef).eq(0).parent());
+                                    $('#ls_dashboard .ls_db_name').each(function () {
+                                        if ($(this).text().toLowerCase() < name.toLowerCase()) {
+                                            row.insertAfter($(this).parent());
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                        // New user
+                        else if (update == id) {
+                            add = true;
+                        }
+                        // Newly logged in user previously listed
+                        else if ($('#' + id).length > 0) {
+                            ls.set_time(id, time);
+                            $('#' + id).prop('id', update);
+                            $('#lsc_' + id).prop('id', 'lsc_' + update);
+                            $('#' + id).data('class', classes);
+                            $('#ls_dashboard th').each(function () {
+                                var lsid = $(this).data('ls');
+                                $("#" + id + lsid).prop('id', update + lsid);
+                            });
+                        }
+                        else {
+                            add = true;
+                        }
+
+                        if (nameChange) {
+                            $('#' + id + " .ls_db_name").html(ls.escape_html(name));
+                            $('#ls_stream tr').each(function () {
+                                if ($(this).data('user') == id) {
+                                    $(this).data('user', update);
+                                    $(this).find('td').eq(1).html(ls.escape_html(name));
+                                }
+                            });
+                        }
+
+                        if (add) {
+                            var row = $("<tr id='" + update + "' class='ls_db_show' data-class='" + classes + "'></tr>");
+                            var cl = '';
+                            if (update.indexOf('session') == 0) {
+                                cl = ' class="ls_db_session" ';
+                            }
+                            row.append($('<td ' + cl + '><input type="checkbox" name="lsc_' + update + '" id="lsc_' + update + '"/></td>'));
+                            row.append($("<td class='ls_db_name'>" + name + "</td>"));
+                            var tcell = $("<td class='ls_db_time'></td>");
+                            ls.set_time(tcell, time);
+                            row.append(tcell);
+                            var ind = 0;
+                            $('#ls_dashboard th').each(function () {
+                                if (ind >= 3) {
+                                    var cell = $("<td></td>");
+                                    if ($(this).data('input')) {
+                                        cell.data('input', '');
+                                        if ($(this).hasClass('ls_db_input_hide')) {
+                                            cell.addClass('ls_db_input_hide');
+                                        }
+                                        else {
+                                            cell.addClass('ls_db_input_show');
+                                        }
+                                        row.append(cell);
+                                    }
+                                    else {
+                                        var link = $("<span>&nbsp;</span>");
+                                        if ($(this).data('hasinput')) {
+                                            link = $("<a class='ls_db_input_a ls_db_input_a_empty'>&#133;</a>").on('click', function (e) {
+                                                ls.db_toggle_input($(this));
+                                            });
+                                        }
+
+                                        var sp = $("<span class='ls_respspan ls_resp0'></span>").prop('id', update + $(this).data('ls')).append(link);
+                                        row.append(cell.append(sp));
+                                    }
+                                }
+                                ind++;
+                            });
+                            row.insertBefore($('#ls_dashboard ' + bef).eq(0).parent());
+                            $('#ls_dashboard .ls_db_name').each(function () {
+                                if ($(this).text().toLowerCase() < name.toLowerCase()) {
+                                    row.insertAfter($(this).parent());
+                                }
+                            });
+                            filter = 1;
+                        }
                     }
                 }
             }
@@ -463,25 +473,32 @@
                 ls.db_input_update(td, $('select[name=lsf_' + n + ']'), true);
 
                 if (updateStream) {
-                    var tr = $('<tr></tr>');
-                    tr.data('user', response.inputs[i][0]).data('iname', 'lsf_' + n);
-                    var tcell = $('<td></td>');
-                    ls.set_time(tcell, time);
-                    tr.append(tcell);
-                    var n2 = $('#' + response.inputs[i][0] + " td.ls_db_name").html();
-                    tr.append($('<td>' + n2 + '</td>'));
-                    tr.append($('<td>' + n + '</td>'));
-                    td = $('<td>Value</td>');
-                    td.data('input', response.inputs[i][2]);
-                    ls.db_input_update(td, $('select[name=lsf_' + n + ']'), true);
-                    tr.append(td);
-                    tr.insertAfter($('#ls_stream tr').eq(0));
+                    var add = true;
+                    $('#ls_stream tr').each(function () {
+                        if ($(this).data('user') == response.inputs[i][0] && $(this).data('iname') == 'lsf_' + n) {
+                            add = ($(this).find('td').data('time') != time);
+                        }
+                    });
+                    if (add) {
+                        var tr = $('<tr></tr>');
+                        tr.data('user', response.inputs[i][0]).data('iname', 'lsf_' + n);
+                        var tcell = $('<td></td>');
+                        ls.set_time(tcell, time);
+                        tr.append(tcell);
+                        var n2 = $('#' + response.inputs[i][0] + " td.ls_db_name").html();
+                        tr.append($('<td>' + n2 + '</td>'));
+                        tr.append($('<td>' + n + '</td>'));
+                        td = $('<td>Value</td>');
+                        td.data('input', response.inputs[i][2]);
+                        ls.db_input_update(td, $('select[name=lsf_' + n + ']'), true);
+                        tr.append(td);
+                        tr.insertAfter($('#ls_stream tr').eq(0));
+                    }
                 }
             }
             if (filter != 0) {
                 ls.db_filter(filter);
             }
-            setTimeout(function () { ls.dashboard() }, 10000);
             $('#ls_dashboard_time').val(response.latest);
         }
         else {
@@ -626,11 +643,13 @@
             url: lsAjax.ajaxurl,
             data: { action: "ls_submission", type: "dashboard", post_id: lsAjax.post_id, nonce: lsAjax.nonce, from: $('#ls_dashboard_time').val() },
             success: function (response) {
-                //alert(response);
+                //$('#debug').text(response.debug);
+
                 ls.input_responses(response, true);
+                setTimeout(function () { ls.dashboard() }, 10000);
             },
             error: function (a, b, c) {
-                alert(a + "," + b + "," + c);
+                alert(a.responseText + "," + b + "," + c);
             }
         });
     }
@@ -656,19 +675,13 @@
 
     ls.db_filter = function (filter) {
         var val = $('#ls_filter').val();
+        $('#ls_p_purge').show();
+        $('#ls_p_remove_class').show();
         if (val != -1) {
-            $('#ls_p_remove_class').show();
-            $('#ls_p_purge').show();
-            $('#ls_remove_class').html(ls.escape_html($('#ls_filter option:selected').text()));
+            $('.ls_class_name').html(ls.escape_html($('#ls_filter option:selected').text()));
         }
         else {
-            if ($('#ls_purge_owner').val() == 1) {
-                $('#ls_p_purge').show();
-            }
-            else {
-                $('#ls_p_purge').hide();
-            }
-            $('#ls_p_remove_class').hide();
+            $('.ls_class_name').html("All my classes");
         }
         var line = 1;
         if (filter != 2) {
