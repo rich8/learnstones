@@ -46,6 +46,7 @@ class Learnstones_Plugin
   	const LS_OPT_CLASSID_SIZE = "clsidsize";
   	const LS_OPT_CLASSID_CHARS = "clsidchars";
   	const LS_OPT_INPUT_DISP = "inputdisp";
+  	const LS_OPT_GOOGLE_ENABLE = "genable";
   	const LS_OPT_GOOGLE_CLIENT_ID = "gclient";
   	const LS_OPT_GOOGLE_CLIENT_SECRET = "gsecret";
   	const LS_OPT_GOOGLE_KEY = "gkey";
@@ -1499,6 +1500,7 @@ class Learnstones_Plugin
   		add_settings_field(self::LS_OPT_CLASSID_SIZE, 'Class Id Size:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_CLASSID_SIZE);
   		add_settings_field(self::LS_OPT_CLASSID_CHARS, 'Class Id Chars:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_CLASSID_CHARS);
   		add_settings_field(self::LS_OPT_INPUT_DISP, 'Input Dashboard Formats:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_INPUT_DISP);
+  		add_settings_field(self::LS_OPT_GOOGLE_ENABLE, 'Google Login:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_GOOGLE_ENABLE);
   		add_settings_field(self::LS_OPT_GOOGLE_CLIENT_ID, 'Google Client Id:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_GOOGLE_CLIENT_ID);
   		add_settings_field(self::LS_OPT_GOOGLE_CLIENT_SECRET, 'Google Client Secret:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_GOOGLE_CLIENT_SECRET);
   		add_settings_field(self::LS_OPT_GOOGLE_KEY, 'Google Server Key:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_GOOGLE_KEY);
@@ -1570,6 +1572,17 @@ class Learnstones_Plugin
 				    <option value='<?php echo($loop); ?>'<?php if($val == $loop) { echo "selected='true'"; } ?>><?php echo($loop); ?></option><?php                     
                 }?>
             </select><?php 
+        }
+		elseif($arg == self::LS_OPT_GOOGLE_ENABLE) {
+            if(isset($options[$arg]))
+            {
+                $val = $options[$arg];
+            }
+            else
+            {
+                $val = "";
+            }   ?>
+			<input type="checkbox" name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' <?php if(!empty($val)) { echo "checked"; }?> /><?php  
         }
 		elseif($arg == self::LS_OPT_GOOGLE_CLIENT_ID || $arg == self::LS_OPT_GOOGLE_CLIENT_SECRET || $arg == self::LS_OPT_GOOGLE_KEY) {
             if(isset($options[$arg]))
@@ -2306,7 +2319,7 @@ class Learnstones_Plugin
             $ret .= "</label></p>";
         }
         $options = get_option(self::LS_OPTIONS);
-        if(isset($options[self::LS_OPT_GOOGLE_CLIENT_ID]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID]))
+        if(isset($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID]))
         {
             $ret .= "<hr class='ls_loginhr'>";
             $ret .= "<p class='ls_loginp'>";
@@ -3715,7 +3728,7 @@ class Learnstones_Plugin
                                 $ret .=         "<li class='$classLogin'><input type='hidden' name='post_id' value='" . get_the_ID() . "' /><input type='hidden' name='" . self::LS_FLD_STONE . "' value='' /><input name='ls_username' class='ls_username ls_ph' type='text' placeholder='" . __('Learnstones User') . "' value='" . esc_attr($this->session_name) . "'/><div class='ls_loginphide'>Please login to keep your results</div>&nbsp;<input name='ls_password' class='ls_password ls_ph' type='password' placeholder='" . __('Learnstones Password') . "'/>&nbsp;";
                                 $ret .= get_submit_button( __('Login'), 'secondary', 'ls_login', FALSE, array('id' => 'ls_login') ) . "</li>";
                                 $options = get_option(self::LS_OPTIONS);
-                                if(isset($options[self::LS_OPT_GOOGLE_CLIENT_ID]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID])) {
+                                if(isset($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID])) {
                                     $ret .= "<li class='$classLogin'><input type='submit' class='ls_glogins' name='" . self::LS_FLD_GOOGLE_LI . "' class='ls_glogins' value='' /></li>";
                                 }
                                 $ret .=         "<li class='$classLogout'>" . __('Welcome,') . " <span class='ls_loginname'>$name</span></li><li class='$classLogout'><input type='submit' class='ls_menu_input' name='" . self::LS_FLD_LOGOUT . "' value='Log Out' /></li>";
@@ -3903,7 +3916,7 @@ class Learnstones_Plugin
         {
             $ret .= "</li><li>Learnstones <a href='" . wp_login_url() . "'>Log in</a>";
             $options = get_option(self::LS_OPTIONS);
-            if(isset($options[self::LS_OPT_GOOGLE_CLIENT_ID]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID]))
+            if(isset($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID]))
             { 
                 if(isset($_GET[self::LS_FLD_LOGGEDOUT]) && $this->session_service != self::LS_SVC_WORDPRESS)
                 {
