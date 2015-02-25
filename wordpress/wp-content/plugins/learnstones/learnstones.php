@@ -50,6 +50,7 @@ class Learnstones_Plugin
   	const LS_OPT_GOOGLE_CLIENT_ID = "gclient";
   	const LS_OPT_GOOGLE_CLIENT_SECRET = "gsecret";
   	const LS_OPT_GOOGLE_KEY = "gkey";
+    const LS_OPT_DOMAINS_ENABLE = "domainsenable";
     const LS_OPT_DOMAINS = "domains";
     const LS_OPT_MESSAGE = "message";
 
@@ -433,7 +434,7 @@ class Learnstones_Plugin
                             else
                             {
                                 $domains = array();
-                                if(isset($options[self::LS_OPT_DOMAINS]))
+                                if(isset($options[self::LS_OPT_DOMAINS_ENABLE]) && !empty($options[self::LS_OPT_DOMAINS_ENABLE]) && isset($options[self::LS_OPT_DOMAINS]))
                                 {
                                     $domains = explode(',', $options[self::LS_OPT_DOMAINS]);
                                     if(empty($domains[0]) && count($domains) == 1)
@@ -1504,6 +1505,7 @@ class Learnstones_Plugin
   		add_settings_field(self::LS_OPT_GOOGLE_CLIENT_ID, 'Google Client Id:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_GOOGLE_CLIENT_ID);
   		add_settings_field(self::LS_OPT_GOOGLE_CLIENT_SECRET, 'Google Client Secret:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_GOOGLE_CLIENT_SECRET);
   		add_settings_field(self::LS_OPT_GOOGLE_KEY, 'Google Server Key:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_GOOGLE_KEY);
+  		add_settings_field(self::LS_OPT_DOMAINS_ENABLE, 'Filter Domains:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_DOMAINS_ENABLE);
   		add_settings_field(self::LS_OPT_DOMAINS, 'Domains:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_DOMAINS);
   		add_settings_field(self::LS_OPT_MESSAGE, 'Login Message:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_MESSAGE);
 	}
@@ -1573,7 +1575,7 @@ class Learnstones_Plugin
                 }?>
             </select><?php 
         }
-		elseif($arg == self::LS_OPT_GOOGLE_ENABLE) {
+		elseif($arg == self::LS_OPT_GOOGLE_ENABLE || $arg == self::LS_OPT_DOMAINS_ENABLE) {
             if(isset($options[$arg]))
             {
                 $val = $options[$arg];
