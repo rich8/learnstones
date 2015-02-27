@@ -801,7 +801,8 @@ class Learnstones_Plugin
 						'has_archive' => true,
 						'show_in_menu' => true,
                         'menu_position' => 5,
-                        'rewrite' => array('slug' => 'classes')  
+                        'rewrite' => array('slug' => 'classes'),
+                        'menu_icon' => 'dashicons-groups'
 					)
 
 		);
@@ -830,7 +831,8 @@ class Learnstones_Plugin
 						'show_in_menu' => true,
                         'menu_position' => 6,
                         'supports' => array('title'),
-                        'rewrite' => array('slug' => 'courses')
+                        'rewrite' => array('slug' => 'courses'),
+                        'menu_icon' => 'dashicons-book-alt'
 					)
 
 		);
@@ -861,7 +863,8 @@ class Learnstones_Plugin
 						'has_archive' => true,
 						'show_in_menu' => true,
                         'menu_position' => 7,
-                        'rewrite' => array('slug' => 'lessons')
+                        'rewrite' => array('slug' => 'lessons'),
+                        'menu_icon' => 'dashicons-welcome-learn-more'
 						//'capability_type' => 'lessons',
 						//'capabilities' => $caps,
 						//'map_meta_cap' => true,
