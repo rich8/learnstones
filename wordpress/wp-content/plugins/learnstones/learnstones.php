@@ -52,6 +52,7 @@ class Learnstones_Plugin
     const LS_OPT_DOMAINS_ENABLE = "domainsenable";
     const LS_OPT_DOMAINS = "domains";
     const LS_OPT_MESSAGE = "message";
+    const LS_OPT_LIGHTS = "lights";
 
     // Website options
 	const LS_OPT_DB_VERSION = "ls_db_version";
@@ -144,6 +145,12 @@ class Learnstones_Plugin
     const LS_OPT_GOOGLE = 'ls_options_google';
     private $LS_OPT_SECTIONS = array(self::LS_OPT_MAIN=>'Main Settings', self::LS_OPT_GOOGLE=>'Google Settings');
 
+    private $LS_LIGHTS_DEFAULT = array(
+                            "l1" => "I don't understand",
+                            "l2" => "I'm not sure",
+                            "l3" => "I get it"
+                        );
+
 	private $session_id = -1;
     private $session_class;
     private $session_name = "";
@@ -153,11 +160,7 @@ class Learnstones_Plugin
     private $session_service = self::LS_SVC_WORDPRESS;
     private $session_stone = 0;
     private $lesson_data = 0;
-    private $lights = array(
-                            "l1" => "I don't understand",
-                            "l2" => "I'm not sure",
-                            "l3" => "I get it"
-                        );
+    private $lights;
     private $shortcode_error;
     private $shortcode_validation;
     private $shortcode_fields = array();
@@ -1524,6 +1527,7 @@ class Learnstones_Plugin
   		$this->add_settings_field_to_tab(self::LS_OPT_DOMAINS_ENABLE, 'Filter Domains:', self::LS_OPT_GOOGLE);
   		$this->add_settings_field_to_tab(self::LS_OPT_DOMAINS, 'Domains:', self::LS_OPT_GOOGLE);
   		$this->add_settings_field_to_tab(self::LS_OPT_MESSAGE, 'Login Message:', self::LS_OPT_MAIN, self::LS_MSG_LOGIN);
+  		$this->add_settings_field_to_tab(self::LS_OPT_LIGHTS, 'Lights:', self::LS_OPT_MAIN, $this->LS_LIGHTS_DEFAULT);
 	}
 
     function add_settings_field_to_tab($option, $caption, $tab, $default = "")
@@ -1568,8 +1572,8 @@ class Learnstones_Plugin
 		}
 		elseif($arg == self::LS_OPT_INPUT_DISP) {
             ?>
-            <table id="ls_input_disp">
-                <tr><th>Name</th><th>Format</th><th>Link?</th><th>Delete?</th></tr><?php
+            <table class="wp-list-table widefat"  id="ls_input_disp">
+                <thead><tr><th class="check-column ls_setting_th">Name</th><th  class="check-column ls_setting_th">Format</th><th class="check-column ls_setting_th">Link?</th><th class="check-column ls_setting_th">Delete?</th></tr></thead><tbody><?php
                 $index = 0;
                 $optprefix = $current_tab . "[" . self::LS_OPT_INPUT_DISP . "]";
                 foreach($val as $row)
@@ -1582,13 +1586,24 @@ class Learnstones_Plugin
                     }
                 }?>
                 <tr><td><input class='ls_ph' placeholder="New Input Format Name" name="<?php echo($optprefix . "[" . $index . "][name]") ?>" type="text" value="" /></td><td><input class="ls_setting ls_ph" placeholder="New Format" name="<?php echo($optprefix . "[" . $index . "][format]") ?>" type="text" value="" /></td><td><input  name="<?php echo($optprefix . "[" . $index . "][url]") ?>" type="checkbox" /></td></tr>
+            </tbody></table><?php 
+        }
+        elseif($arg == self::LS_OPT_LIGHTS) {
+            ?>
+            <table class="wp-list-table widefat" id="ls_lights_captions"><thead>
+                <tr><th class="check-column ls_setting_th">Light</th><th class="check-column ls_setting_th">Caption</th></tr></thead><tbody><?php
+                foreach($val as $light => $caption)
+                {
+                     $optprefix = $current_tab . "[" . self::LS_OPT_LIGHTS . "][$light]";?>
+                     <tr><td><?php echo($light); ?></td><td><input class='ls_setting ls_ph' placeholder="New Light Caption" name="<?php echo($optprefix) ?>" type="text" value="<?php echo($caption)?>" /></td></tr><?php 
+                }?></tbody>
             </table><?php 
         }
 		elseif($arg == self::LS_OPT_CLASSID_SIZE) {?>
 			<select name='<?php echo $current_tab . "[" . $arg . "]" ?>' ><?php
                 for($loop = 1; $loop <=12; $loop++)
                 {?>                                   ?>
-				    <option value='<?php echo($loop); ?>'<?php if($val == $loop) { echo "selected='true'"; } ?>><?php echo($loop); ?></option><?php                     
+				    <option value='<?php echo($loop); ?>'<?php if($val == $loop) { echo " selected='true'"; } ?>><?php echo($loop); ?></option><?php                     
                 }?>
             </select><?php 
         }
@@ -3620,6 +3635,12 @@ class Learnstones_Plugin
                     {
                         $this->get_lesson_data();
                         $this->shortcode_validation = FALSE;
+                        $opts = get_option(self::LS_OPT_MAIN);
+                        $this->lights = $this->LS_LIGHTS_DEFAULT;
+                        if(isset($opts[self::LS_OPT_LIGHTS]))
+                        {
+                            $this->lights = array_merge($this->lights,$opts[self::LS_OPT_LIGHTS]);
+                        }
                         $ret = "<div id='ls_presentation'>";
                         $ret .= "<div id='ls_presentation_w'>Slide</div>";
                         $ret .= "</div>";

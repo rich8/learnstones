@@ -232,6 +232,10 @@
     width: 500px;
 }
 
+th.ls_setting_th {
+    font-weight: 400;
+}
+
 .ls_db_session {
     background-color: #f00;
 }
