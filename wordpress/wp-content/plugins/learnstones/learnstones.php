@@ -39,7 +39,6 @@ class Learnstones_Plugin
 	const LS_TYPE_CLASS = "ls_class";
 
     // Options page stuff
-	const LS_OPTIONS = "ls_options";
 	const LS_OPT_SESSION_DURATION = "duration";
 	const LS_OPT_SESSION_PURGE = "purge";
   	const LS_OPT_SLIDE = "slide";
@@ -140,6 +139,10 @@ class Learnstones_Plugin
 
     const LS_SVC_WORDPRESS = 0;
     const LS_SVC_GOOGLE = 1;
+
+    const LS_OPT_MAIN = 'ls_options';
+    const LS_OPT_GOOGLE = 'ls_options_google';
+    private $LS_OPT_SECTIONS = array(self::LS_OPT_MAIN=>'Main Settings', self::LS_OPT_GOOGLE=>'Google Settings');
 
 	private $session_id = -1;
     private $session_class;
@@ -311,7 +314,7 @@ class Learnstones_Plugin
         $name = $this->session_name;
         if(isset($_POST[self::LS_FLD_GOOGLE_LI]))
         {
-            $options = get_option(self::LS_OPTIONS);
+            $options = get_option(self::LS_OPT_MAIN);
 
             $state = md5(rand());
 
@@ -377,7 +380,7 @@ class Learnstones_Plugin
                 $client = new Google_Client();
                 $client->setApplicationName('learnstones');
 
-                $options = get_option(self::LS_OPTIONS);
+                $options = get_option(self::LS_OPT_GOOGLE);
                 $gclientId = "";
                 if(isset($options[self::LS_OPT_GOOGLE_CLIENT_ID]))
                 {
@@ -1286,7 +1289,7 @@ class Learnstones_Plugin
             }
             $lsAjaxDat['lss'] = $lsad;
             $lsAjaxDat['select'] = $this->select_learnstone;
-            $options = get_option(self::LS_OPTIONS);
+            $options = get_option(self::LS_OPT_MAIN);
 		    $slide = "default";
 		    if(isset($options[self::LS_OPT_SLIDE]))
 		    {
@@ -1302,7 +1305,7 @@ class Learnstones_Plugin
 				    {
 					    $slide = $slideshow;
 					    $options[self::LS_OPT_SLIDE] = $slideshow;
-					    update_option(self::LS_OPTIONS, $options);
+					    update_option(self::LS_OPT_MAIN, $options);
 					    break;
 				    }
 			    }
@@ -1478,13 +1481,20 @@ class Learnstones_Plugin
 	}
 
 	function build_options_page() {
+        $current_tab = isset($_GET['tab']) ? $_GET['tab'] : self::LS_OPT_MAIN;
 		?>
+            <h2 class="nav-tab-wrapper"><?php
+                foreach($this->LS_OPT_SECTIONS as $t => $caption )
+                {
+                    echo ("<a class='nav-tab " . ($current_tab == $t ? 'nav-tab-active' : '') . "' href='?page=" . __FILE__ . "&tab=$t'>$caption</a>");
+                } ?>
+            </h2>
 			<div id="wrap">
 				<div class="icon32" id="icon-tools"> <br /> </div>
 				<h2>Learnstones Options</h2>
 				<form method="post" action="options.php">
-					<?php settings_fields(self::LS_OPTIONS); ?>
-					<?php do_settings_sections(__FILE__); ?>
+					<?php settings_fields($current_tab); ?>
+					<?php do_settings_sections($current_tab); ?>
 					<?php submit_button(); ?>
 				</form>
 			</div>
@@ -1492,65 +1502,77 @@ class Learnstones_Plugin
 	}
 
 	function admin_init() {
-		register_setting(self::LS_OPTIONS, self::LS_OPTIONS, array($this, 'register_setting'));
-		add_settings_section('ls_main_section', 'Main Settings', array($this, 'add_settings_section'), __FILE__);
-		add_settings_field(self::LS_OPT_SESSION_DURATION, 'Learnstones Session Duration:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_SESSION_DURATION);
-		add_settings_field(self::LS_OPT_SESSION_PURGE, 'Purge Sessions from Database:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_SESSION_PURGE);
-  		add_settings_field(self::LS_OPT_SLIDE, 'Slideshow:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_SLIDE);
-  		add_settings_field(self::LS_OPT_LOGIN_WARN, 'Login Warning:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_LOGIN_WARN);
-  		add_settings_field(self::LS_OPT_CLASSID_SIZE, 'Class Id Size:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_CLASSID_SIZE);
-  		add_settings_field(self::LS_OPT_CLASSID_CHARS, 'Class Id Chars:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_CLASSID_CHARS);
-  		add_settings_field(self::LS_OPT_INPUT_DISP, 'Input Dashboard Formats:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_INPUT_DISP);
-  		add_settings_field(self::LS_OPT_GOOGLE_ENABLE, 'Google Login:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_GOOGLE_ENABLE);
-  		add_settings_field(self::LS_OPT_GOOGLE_CLIENT_ID, 'Google Client Id:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_GOOGLE_CLIENT_ID);
-  		add_settings_field(self::LS_OPT_GOOGLE_CLIENT_SECRET, 'Google Client Secret:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_GOOGLE_CLIENT_SECRET);
-  		add_settings_field(self::LS_OPT_GOOGLE_KEY, 'Google Server Key:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_GOOGLE_KEY);
-  		add_settings_field(self::LS_OPT_DOMAINS_ENABLE, 'Filter Domains:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_DOMAINS_ENABLE);
-  		add_settings_field(self::LS_OPT_DOMAINS, 'Domains:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_DOMAINS);
-  		add_settings_field(self::LS_OPT_MESSAGE, 'Login Message:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_MESSAGE);
+        foreach($this->LS_OPT_SECTIONS as $setting => $caption)
+        {
+    		register_setting($setting, $setting);
+   	    	add_settings_section($setting . "section", $caption, array($this, 'add_settings_section'), $setting);                        
+        }
+		$this->add_settings_field_to_tab(self::LS_OPT_SESSION_DURATION, 'Learnstones Session Duration:', self::LS_OPT_MAIN, 0);
+		$this->add_settings_field_to_tab(self::LS_OPT_SESSION_PURGE, 'Purge Sessions from Database:', self::LS_OPT_MAIN, 0);
+  		$this->add_settings_field_to_tab(self::LS_OPT_SLIDE, 'Slideshow:', self::LS_OPT_MAIN, "oconner");
+  		$this->add_settings_field_to_tab(self::LS_OPT_LOGIN_WARN, 'Login Warning:', self::LS_OPT_MAIN, self::LS_OPT_LOGIN_WARN_DEFAULT);
+  		$this->add_settings_field_to_tab(self::LS_OPT_CLASSID_SIZE, 'Class Id Size:', self::LS_OPT_MAIN, self::LS_CLS_CODE_SIZE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_CLASSID_CHARS, 'Class Id Chars:', self::LS_OPT_MAIN, self::LS_CLS_CHARS);
+  		$this->add_settings_field_to_tab(self::LS_OPT_INPUT_DISP, 'Input Dashboard Formats:', self::LS_OPT_MAIN, array());
+  		$this->add_settings_field_to_tab(self::LS_OPT_GOOGLE_ENABLE, 'Google Login:', self::LS_OPT_GOOGLE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_GOOGLE_CLIENT_ID, 'Google Client Id:', self::LS_OPT_GOOGLE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_GOOGLE_CLIENT_SECRET, 'Google Client Secret:', self::LS_OPT_GOOGLE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_GOOGLE_KEY, 'Google Server Key:', self::LS_OPT_GOOGLE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_DOMAINS_ENABLE, 'Filter Domains:', self::LS_OPT_GOOGLE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_DOMAINS, 'Domains:', self::LS_OPT_GOOGLE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_MESSAGE, 'Login Message:', self::LS_OPT_MAIN, self::LS_MSG_LOGIN);
 	}
 
-	function register_setting($ls_options) {
-		return $ls_options;
-	}
+    function add_settings_field_to_tab($option, $caption, $tab, $default = "")
+    {
+        add_settings_field($option, $caption, array($this, 'add_settings_field'), $tab, $tab . "section", array($option, $tab, $default));
+    }
 
 	function add_settings_section() {
 	}
 
-	function add_settings_field($arg) {
-		$options = get_option(self::LS_OPTIONS);
+	function add_settings_field($args) {
+        $current_tab = isset($_GET['tab']) ? $_GET['tab'] : self::LS_OPT_MAIN;
+
+		$options = get_option($current_tab);
+        $arg = $args[0];
+        if(isset($options[$arg]))
+        {
+            $val = $options[$arg];
+        }
+        else
+        {
+            $val = $args[2];
+        } 
+
 		if($arg == self::LS_OPT_SESSION_DURATION)
 		{ ?>
-			<select name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' >
-				<option value='0'		<?php if($options[self::LS_OPT_SESSION_DURATION] == 0) { echo "selected='true'"; } ?>>Browser Session</option>
-				<option value='86400'		<?php if($options[self::LS_OPT_SESSION_DURATION] == 86400) { echo "selected='true'"; } ?>>1 Day</option>
-				<option value='2592000'		<?php if($options[self::LS_OPT_SESSION_DURATION] == 2592000) { echo "selected='true'"; } ?>>30 Days</option>
-				<option value='31536000'	<?php if($options[self::LS_OPT_SESSION_DURATION] == 31536000) { echo "selected='true'"; } ?>>1 Year</option>
+			<select name='<?php echo $current_tab . "[" . $arg . "]" ?>' >
+				<option value='0'		<?php if($val == 0) { echo "selected='true'"; } ?>>Browser Session</option>
+				<option value='86400'		<?php if($val == 86400) { echo "selected='true'"; } ?>>1 Day</option>
+				<option value='2592000'		<?php if($val == 2592000) { echo "selected='true'"; } ?>>30 Days</option>
+				<option value='31536000'	<?php if($val == 31536000) { echo "selected='true'"; } ?>>1 Year</option>
 			</select> <?php
 		}
 		elseif($arg == self::LS_OPT_SESSION_PURGE)
 		{ ?>
-			<select name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' >
-				<option value='0'		<?php if($options[self::LS_OPT_SESSION_PURGE] == 0) { echo "selected='true'"; } ?>>Never</option>
-				<option value='86400'		<?php if($options[self::LS_OPT_SESSION_PURGE] == 86400) { echo "selected='true'"; } ?>>1 Day</option>
-				<option value='2592000'		<?php if($options[self::LS_OPT_SESSION_PURGE] == 2592000) { echo "selected='true'"; } ?>>30 Days</option>
-				<option value='31536000'	<?php if($options[self::LS_OPT_SESSION_PURGE] == 31536000) { echo "selected='true'"; } ?>>1 Year</option>
+			<select name='<?php echo $current_tab . "[" . $arg . "]" ?>' >
+				<option value='0'		<?php if($val == 0) { echo "selected='true'"; } ?>>Never</option>
+				<option value='86400'		<?php if($val == 86400) { echo "selected='true'"; } ?>>1 Day</option>
+				<option value='2592000'		<?php if($val == 2592000) { echo "selected='true'"; } ?>>30 Days</option>
+				<option value='31536000'	<?php if($val == 31536000) { echo "selected='true'"; } ?>>1 Year</option>
 			</select> <?php
 		}
 		elseif($arg == self::LS_OPT_INPUT_DISP) {
-            $rows = array();
-            if(isset($options[$arg]))
-            {
-                $rows = $options[$arg];
-            }?>
+            ?>
             <table id="ls_input_disp">
                 <tr><th>Name</th><th>Format</th><th>Link?</th><th>Delete?</th></tr><?php
                 $index = 0;
-                $optprefix = self::LS_OPTIONS . "[" . self::LS_OPT_INPUT_DISP . "]";
-                foreach($rows as $row)
+                $optprefix = $current_tab . "[" . self::LS_OPT_INPUT_DISP . "]";
+                foreach($val as $row)
                 {
                     if(!isset($row['deleted'])
-                     && (!empty($row['name']) || !empty($row['format']))
+                        && (!empty($row['name']) || !empty($row['format']))
                         ) {?>
                         <tr><td><input class='ls_ph' placeholder="New Input Format Name" name="<?php echo($optprefix . "[" . $index . "][name]") ?>" type="text" value="<?php echo($row['name'])?>" /></td><td><input class="ls_setting ls_ph" name="<?php echo($optprefix . "[" . $index . "][format]") ?>" type="text" value="<?php echo($row['format'])?>" placeholder="New Format" /><?php if(strpos(strtolower($row['format']), self::LS_TOK_INPUT) === FALSE){echo "<br />No " . self::LS_TOK_INPUT . " token"; }?></td><td><input  name="<?php echo($optprefix . "[" . $index . "][url]") ?>" type="checkbox" <?php if(isset($row['url'])) { echo "checked"; }?> /></td><td><input  name="<?php echo($optprefix . "[" . $index . "][deleted]") ?>" type="checkbox" <?php if(isset($row['deleted'])) { echo "checked"; }?> /></td></tr><?php 
                         $index++;
@@ -1559,87 +1581,31 @@ class Learnstones_Plugin
                 <tr><td><input class='ls_ph' placeholder="New Input Format Name" name="<?php echo($optprefix . "[" . $index . "][name]") ?>" type="text" value="" /></td><td><input class="ls_setting ls_ph" placeholder="New Format" name="<?php echo($optprefix . "[" . $index . "][format]") ?>" type="text" value="" /></td><td><input  name="<?php echo($optprefix . "[" . $index . "][url]") ?>" type="checkbox" /></td></tr>
             </table><?php 
         }
-		elseif($arg == self::LS_OPT_CLASSID_SIZE) {
-            if(isset($options[$arg]))
-            {
-                $val = $options[$arg];
-            }
-            else
-            {
-                $val = self::LS_CLS_CODE_SIZE;
-            }   ?>
-			<select name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' ><?php
+		elseif($arg == self::LS_OPT_CLASSID_SIZE) {?>
+			<select name='<?php echo $current_tab . "[" . $arg . "]" ?>' ><?php
                 for($loop = 1; $loop <=12; $loop++)
                 {?>                                   ?>
 				    <option value='<?php echo($loop); ?>'<?php if($val == $loop) { echo "selected='true'"; } ?>><?php echo($loop); ?></option><?php                     
                 }?>
             </select><?php 
         }
-		elseif($arg == self::LS_OPT_GOOGLE_ENABLE || $arg == self::LS_OPT_DOMAINS_ENABLE) {
-            if(isset($options[$arg]))
-            {
-                $val = $options[$arg];
-            }
-            else
-            {
-                $val = "";
-            }   ?>
-			<input type="checkbox" name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' <?php if(!empty($val)) { echo "checked"; }?> /><?php  
+		elseif($arg == self::LS_OPT_GOOGLE_ENABLE || $arg == self::LS_OPT_DOMAINS_ENABLE) { ?>
+			<input type="checkbox" name='<?php echo $current_tab . "[" . $arg . "]" ?>' <?php if(!empty($val)) { echo "checked"; }?> /><?php  
         }
-		elseif($arg == self::LS_OPT_GOOGLE_CLIENT_ID || $arg == self::LS_OPT_GOOGLE_CLIENT_SECRET || $arg == self::LS_OPT_GOOGLE_KEY) {
-            if(isset($options[$arg]))
-            {
-                $val = $options[$arg];
-            }
-            else
-            {
-                $val = "";
-            }   ?>
-			<input type="text" class="ls_setting" name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' value="<?php echo(esc_attr($val)) ?>"/><?php  
+		elseif($arg == self::LS_OPT_GOOGLE_CLIENT_ID || $arg == self::LS_OPT_GOOGLE_CLIENT_SECRET || $arg == self::LS_OPT_GOOGLE_KEY) { ?>
+			<input type="text" class="ls_setting" name='<?php echo $current_tab . "[" . $arg . "]" ?>' value="<?php echo(esc_attr($val)) ?>"/><?php  
         }
-		elseif($arg == self::LS_OPT_CLASSID_CHARS) {
-            if(isset($options[$arg]))
-            {
-                $val = $options[$arg];
-            }
-            else
-            {
-                $val = self::LS_CLS_CHARS;
-            }   ?>
-			<input type="text" class="ls_setting" name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' value="<?php echo(esc_attr($val)) ?>"/><?php  
+		elseif($arg == self::LS_OPT_CLASSID_CHARS) { ?>
+			<input type="text" class="ls_setting" name='<?php echo $current_tab . "[" . $arg . "]" ?>' value="<?php echo(esc_attr($val)) ?>"/><?php  
         }
-		elseif($arg == self::LS_OPT_DOMAINS) { 
-            if(isset($options[$arg]))
-            {
-                $val = $options[$arg];
-            }
-            else
-            {
-                $val = "";
-            }   ?>
-            <textarea name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>'  class="ls_domains"><?php echo($val)?></textarea><p class="ls_domains">Comma delimited list of domains</p><?php
+		elseif($arg == self::LS_OPT_DOMAINS) { ?>
+            <textarea name='<?php echo $current_tab . "[" . $arg . "]" ?>'  class="ls_domains"><?php echo($val)?></textarea><p class="ls_domains">Comma delimited list of domains</p><?php
         }
-		elseif($arg == self::LS_OPT_MESSAGE) { 
-            if(isset($options[$arg]))
-            {
-                $val = $options[$arg];
-            }
-            else
-            {
-                $val = self::LS_MSG_LOGIN;
-            }   ?>
-            <textarea name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>'  class="ls_loginmsg"><?php echo($val)?></textarea><?php
+		elseif($arg == self::LS_OPT_MESSAGE) { ?>
+            <textarea name='<?php echo $current_tab . "[" . $arg . "]" ?>'  class="ls_loginmsg"><?php echo($val)?></textarea><?php
         }
-		elseif($arg == self::LS_OPT_LOGIN_WARN) {
-            if(isset($options[$arg]))
-            {
-                $val = $options[$arg];
-            }
-            else
-            {
-                $val = self::LS_OPT_LOGIN_WARN_DEFAULT;
-            }   ?>
-			<select name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' >
+		elseif($arg == self::LS_OPT_LOGIN_WARN) { ?>
+			<select name='<?php echo $current_tab . "[" . $arg . "]" ?>' >
 				<option value='0'		<?php if($val == 0) { echo "selected='true'"; } ?>>Never</option>
 				<option value='60'		<?php if($val == 60) { echo "selected='true'"; } ?>>1 Minute</option>
 				<option value='300'		<?php if($val == 300) { echo "selected='true'"; } ?>>5 Minutes</option>
@@ -1651,12 +1617,12 @@ class Learnstones_Plugin
         else
         {
             $slideshows = scandir(plugin_dir_path(__FILE__) . self::LS_SLIDESHOW_FOLDER); ?>
-			<select name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' ><?php
+			<select name='<?php echo $current_tab . "[" . $arg . "]" ?>' ><?php
 				foreach($slideshows as $slideshow)
 				{
 					if(strpos($slideshow, ".") !== 0)
 					{?>
-						<option value='<?php echo $slideshow; ?>' <?php if($options[self::LS_OPT_SLIDE] == $slideshow) { echo "selected='true'"; } ?>><?php count($slideshows); ?><?php echo $slideshow; ?></option><?php
+						<option value='<?php echo $slideshow; ?>' <?php if($val == $slideshow) { echo "selected='true'"; } ?>><?php count($slideshows); ?><?php echo $slideshow; ?></option><?php
 					}
 				} ?>
 			</select> <?php
@@ -2282,7 +2248,7 @@ class Learnstones_Plugin
 
 	function login_message()
     {
-        $options = get_option(self::LS_OPTIONS);
+        $options = get_option(self::LS_OPT_MAIN);
         if(isset($options[self::LS_OPT_MESSAGE]))
         {
             echo($options[self::LS_OPT_MESSAGE]);            
@@ -2320,7 +2286,7 @@ class Learnstones_Plugin
             }
             $ret .= "</label></p>";
         }
-        $options = get_option(self::LS_OPTIONS);
+        $options = get_option(self::LS_OPT_GOOGLE);
         if(isset($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID]))
         {
             $ret .= "<hr class='ls_loginhr'>";
@@ -2825,7 +2791,7 @@ class Learnstones_Plugin
 			    }
     		}
 
-            $options = get_option(self::LS_OPTIONS);
+            $options = get_option(self::LS_OPT_MAIN);
 		    if($options[self::LS_OPT_SESSION_DURATION] == 0)
 		    {
 			    setcookie(self::LS_COOKIE, $this->session_id, 0);
@@ -3380,7 +3346,7 @@ class Learnstones_Plugin
 
                         $dops = "<div id='ls_dops'>";
 
-                        $doptions = get_option(self::LS_OPTIONS);
+                        $doptions = get_option(self::LS_OPT_MAIN);
                         $values = array("(None)" => array(self::LS_TOK_INPUT, 0), "(URL)" => array(self::LS_TOK_INPUT , 1));
                         if(isset($doptions[self::LS_OPT_INPUT_DISP]))
                         {
@@ -3729,7 +3695,7 @@ class Learnstones_Plugin
                                 $ret .= $classOutput;
                                 $ret .=         "<li class='$classLogin'><input type='hidden' name='post_id' value='" . get_the_ID() . "' /><input type='hidden' name='" . self::LS_FLD_STONE . "' value='' /><input name='ls_username' class='ls_username ls_ph' type='text' placeholder='" . __('Learnstones User') . "' value='" . esc_attr($this->session_name) . "'/><div class='ls_loginphide'>Please login to keep your results</div>&nbsp;<input name='ls_password' class='ls_password ls_ph' type='password' placeholder='" . __('Learnstones Password') . "'/>&nbsp;";
                                 $ret .= get_submit_button( __('Login'), 'secondary', 'ls_login', FALSE, array('id' => 'ls_login') ) . "</li>";
-                                $options = get_option(self::LS_OPTIONS);
+                                $options = get_option(self::LS_OPT_GOOGLE);
                                 if(isset($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID])) {
                                     $ret .= "<li class='$classLogin'><input type='submit' class='ls_glogins' name='" . self::LS_FLD_GOOGLE_LI . "' class='ls_glogins' value='' /></li>";
                                 }
@@ -3917,7 +3883,7 @@ class Learnstones_Plugin
         if(!is_user_logged_in())
         {
             $ret .= "</li><li>Learnstones <a href='" . wp_login_url() . "'>Log in</a>";
-            $options = get_option(self::LS_OPTIONS);
+            $options = get_option(self::LS_OPT_GOOGLE);
             if(isset($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID]))
             { 
                 if(isset($_GET[self::LS_FLD_LOGGEDOUT]) && $this->session_service != self::LS_SVC_WORDPRESS)
@@ -3995,7 +3961,7 @@ class Learnstones_Plugin
     {
 
         $val = self::LS_CLS_CODE_SIZE;
-        $options = get_option(self::LS_OPTIONS);
+        $options = get_option(self::LS_OPT_MAIN);
         if(isset($options[self::LS_OPT_CLASSID_SIZE]))
         {
             $val = $options[self::LS_OPT_CLASSID_SIZE];
