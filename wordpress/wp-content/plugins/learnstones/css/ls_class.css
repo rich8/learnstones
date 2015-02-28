@@ -1,0 +1,6 @@
+/*
+* Hides navigation between classes
+*/
+nav.navigation  {
+    display: none;
+}

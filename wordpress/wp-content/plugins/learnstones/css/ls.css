@@ -1,0 +1,314 @@
+.ls_meta_box_label {
+    display: inline-block;
+    width: 150px;
+}
+
+.ls_course_item {
+    margin-left: 10px;
+    list-style-type: circle;
+}
+
+.ls_course_item_edit {
+    margin-left: 10px;
+    list-style-type: none;
+}
+
+.ls_lesson_item {
+    margin-left: 10px;
+    list-style-type: disc;
+}
+
+.ls_lesson_item_edit {
+    margin-left: 10px;
+    list-style-type: none;
+}
+
+.ls_course_inner
+{
+    background-color: #e0e0e0;
+    overflow: hidden;
+}
+
+.ls_content
+{
+    float: left;
+    width: 75%;
+    background-color: #f0f0f0;
+    padding-bottom: 32111px;
+    margin-bottom: -32111px;
+}
+
+.ls_sidebar
+{
+    float: left;
+    width: 25%;
+    text-align: center;
+    background-color: #e0e0e0;
+    padding-bottom: 32111px;
+    margin-bottom: -32111px;
+}
+
+.ls_db_show
+{
+    display: table-row;
+}
+
+.ls_db_hide
+{
+    display: none;
+}
+
+.ls_db_odd
+{
+    background-color: #f0f0f0;
+}
+
+.ls_db_even
+{
+    background-color: #fff;
+}
+
+#ls_db_wrapper
+{
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width : 100%;
+    background-color: #fff;
+    min-height: 100%;
+    margin: 0px auto;
+    padding: 5px;
+    z-index: 10000;
+}
+
+#ls_db_wrapper h1
+{
+    margin: 0px;
+}
+
+.ls_respspan {
+	background-image: url(images/lsimg.png);
+	background-position: 0px 0px;
+	background-repeat:repeat-y;
+    float: left;
+    width: 32px;
+    height: 32px;
+    vertical-align: middle;
+    line-height: 32px;
+}
+
+.ls_resp0 {
+	background-position: -64px -96px;
+}
+
+.ls_resp1 {
+	background-position: -64px -128px;
+}
+
+.ls_resp2 {
+	background-position: -64px -160px;
+}
+
+.ls_resp3 {
+	background-position: -64px -192px;
+}
+
+#ls_dashboard {
+    width: auto;
+    background-color: #fff;
+}
+
+#ls_stream {
+    width: auto;
+    background-color: #fff;
+}
+
+#ls_dashboard .ls_db_name{
+    width: 200px;
+    text-align: left;
+}
+
+#ls_dashboard .ls_db_time{
+    text-align: left;
+}
+
+#ls_dashboard td {
+    width: 40px;
+    border-top: 1px solid #e0e0e0;
+    border-left: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
+    vertical-align: middle;
+    text-align: center;
+    margin: 0px;
+    padding: 0px 0px 0px 4px;
+    white-space: nowrap;
+}
+
+.ls_hover {
+    background-color: #bcf3b4;
+}
+
+#ls_dashboard th.ls_rotated {
+    height: 80px;
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    position: relative;
+    vertical-align: bottom;
+    padding: 0px;
+    font-size: 12px;
+    line-height: 0.8;
+    border: 0px;
+}
+
+#ls_dashboard th.ls_rotated > div {
+    position: relative;
+    top: 0px;
+    left: 40px;
+    height: 100%;
+    -webkit-transform: skew(-45deg, 0deg);
+    -moz-transform: skew(-45deg, 0deg);
+    -ms-transform: skew(-45deg, 0deg);
+    -o-transform: skew(-45deg, 0deg);
+    transform:  skew(-45deg, 0deg);
+    overflow: hidden;
+    border-left: 1px solid #e0e0e0;
+    border-top: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
+}
+
+#ls_dashboard th.ls_rotated span {
+    width: 85px;
+    -webkit-transform: skew(45deg, 0deg) rotate(315deg);
+    -moz-transform: skew(45deg, 0deg) rotate(315deg);
+    -ms-transform: skew(45deg, 0deg) rotate(315deg);
+    -o-transform: skew(45deg, 0deg) rotate(315deg);
+    transform:  skew(45deg, 0deg) rotate(315deg);
+    position: absolute;
+    bottom: 30px;
+    left: -25px;
+    display: inline-block;
+    text-align: left;
+}
+
+#ls_dashboard .ls_db_input_hide {
+    display: none;
+}
+
+#ls_dashboard .ls_db_input_show {
+    text-align: left;
+    display: table-cell;
+}
+
+#ls_dashboard .ls_db_input_a_full {
+    font-weight: 800;
+    color: #fff;
+}
+
+#ls_dashboard .ls_db_input_a_empty {
+    font-weight: 800;
+    color: #000;
+}
+
+
+#ls_dashboard .ls_db_input_a_full:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+#ls_dashboard .ls_db_input_a_empty:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+
+#ls_stream 
+{
+    display: none;
+}
+
+
+.ls_setting {
+    width: 500px;
+}
+
+.ls_db_session {
+    background-color: #f00;
+}
+
+input.ls_glogin, input.ls_glogin:hover
+{
+    padding: 0px;
+    margin: 0px;
+    background: transparent;
+    border: 0px;
+  	background-image: url(images/Red-signin_Medium_base_32dp.png);
+	background-position: 0px 0px;
+	background-repeat:no-repeat;
+    cursor: pointer;
+    background-size: 123px 42px;
+    width: 123px;
+    height: 42px;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    vertical-align: middle;
+}
+
+.ls_loginhr
+{
+    width: 100%;
+}
+
+.ls_loginp
+{
+    text-align: center;
+}
+
+#ls_db_menu
+{
+    list-style-type: none;
+}
+
+#ls_db_menu li
+{
+    margin: 0px;
+}
+
+textarea.ls_domains
+{
+    width: 100%;
+    height: 50px;
+}
+p.ls_domains
+{
+    font-size: 50%;
+    font-style: italic;
+}
+
+textarea.ls_loginmsg
+{
+    width: 100%;
+    height: 100px;
+}
+
+#ls_db_menu li + li:before
+{
+    content: " | ";
+}
+
+#ls_db_menu li
+{
+    display: inline;
+}
+
+
+#ls_dops
+{
+    display: none;
+}
+
+#ls_man
+{
+    display: none;
+}

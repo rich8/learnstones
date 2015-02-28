@@ -1,0 +1,21 @@
+.ls_ph::-webkit-input-placeholder {
+    color: #c0c0c0;
+    font-style: italic;
+}
+
+.ls_ph:-moz-placeholder {
+    color: #c0c0c0;
+    font-style: italic;
+    opacity: 1;
+}
+
+.ls_ph::-moz-placeholder {
+    color: #c0c0c0;
+    font-style: italic;
+    opacity: 1;
+}
+
+.ls_ph:-ms-input-placeholder {
+    color: #c0c0c0;
+    font-style: italic;
+}

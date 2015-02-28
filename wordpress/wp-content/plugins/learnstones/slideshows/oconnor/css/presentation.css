@@ -1,0 +1,25 @@
+#ls_presentation {
+    background-color: #fff;
+    width : 100%;
+    margin: 0px auto;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    z-index: 10000;
+}
+
+.ls_slidemenu {
+    position: fixed;
+    margin: 0px;
+	width: 100%;
+	height:180px;
+    top: 0px;
+    background-color: #fff;
+	overflow:hidden;
+}
+
+.ls_slidebody {
+    margin: 180px 0px 0px 0px;
+	width:100%;
+    padding: 5px;
+}
