@@ -13,8 +13,8 @@ require_once( ABSPATH . 'wp-admin/includes/template.php');
 require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 require_once('simple_html_dom.php');
 require_once('http_build_url.php');
-require_once 'google-api-php-client-master/src/Google/Client.php';
-
+require_once('google-api-php-client-master/src/Google/Client.php');
+require_once('include/lspdf.php');
 class Learnstones_Plugin
 {
 
@@ -53,6 +53,7 @@ class Learnstones_Plugin
     const LS_OPT_DOMAINS = "domains";
     const LS_OPT_MESSAGE = "message";
     const LS_OPT_LIGHTS = "lights";
+    const LS_OPT_PDF_LIGHTS = "pdflights";
 
     // Website options
 	const LS_OPT_DB_VERSION = "ls_db_version";
@@ -88,6 +89,7 @@ class Learnstones_Plugin
     const LS_FLD_LEARNSTONE = 'ls_ls';
     const LS_FLD_UVNAME = 'ls_name';
     const LS_FLD_DASH = "ls_db";
+    const LS_FLD_PDF = "ls_pdf";
     const LS_FLD_SEARCH_TYPE = "ls_search_in";
     const LS_FLD_TITLE = "ls_title";
     const LS_FLD_POST_ID = "post_id";
@@ -134,6 +136,8 @@ class Learnstones_Plugin
     const LS_CLS_CHARS = "ABCDEFGHIJKLMNPQRSTUVWXYZ123456789";
     const LS_CLS_CODE_SIZE = 6;
 
+    const LS_PDF_LIGHTS_DEFAULT = '<p class="lights">Lights image and text</p>';
+
     const LS_NAME_UNVERIFIED = "(Unverified)";
 
     const LS_MSG_LOGIN = "<p>Welcome to Learnstones.  <b>Do not</b> enter your username or password here, if you are logging in with Learnstones validated Google account.  Otherwise use your Learnstones log in details and click the alternative log in button.</p>";
@@ -143,7 +147,8 @@ class Learnstones_Plugin
 
     const LS_OPT_MAIN = 'ls_options';
     const LS_OPT_GOOGLE = 'ls_options_google';
-    private $LS_OPT_SECTIONS = array(self::LS_OPT_MAIN=>'Main Settings', self::LS_OPT_GOOGLE=>'Google Settings');
+    const LS_OPT_PDF = 'ls_options_pdf';
+    private $LS_OPT_SECTIONS = array(self::LS_OPT_MAIN=>'Main Settings', self::LS_OPT_GOOGLE=>'Google Settings',self::LS_OPT_PDF=>'PDF Settings');
 
     private $LS_LIGHTS_DEFAULT = array(
                             "l1" => "I don't understand",
@@ -168,6 +173,7 @@ class Learnstones_Plugin
     private $valid_class = TRUE;
     private $select_learnstone = 0;
     private $dashboard = FALSE;
+    private $pdf = FALSE;
     private $max_width = 640;
     private $settings_page;
     private $login_redirect;
@@ -280,30 +286,38 @@ class Learnstones_Plugin
 
         if(is_singular(self::LS_TYPE_LESSON))
         {
-            // This is a copy nocache_headers, with no-store added, awaiting wp fix
+            if(isset($_GET[self::LS_FLD_PDF]))
+            {   
+                $this->pdf = TRUE;
+                ob_start();
+            }
+            else
+            {
+                // This fis a copy nocache_headers, with no-store added, awaiting wp fix
 
-	        $headers = wp_get_nocache_headers();
+	            $headers = wp_get_nocache_headers();
 
-            $headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0';
+                $headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0';
 
-	        unset( $headers['Last-Modified'] );
+	            unset( $headers['Last-Modified'] );
 
-	        // In PHP 5.3+, make sure we are not sending a Last-Modified header.
-	        if ( function_exists( 'header_remove' ) ) {
-		        @header_remove( 'Last-Modified' );
-	        } else {
-		        // In PHP 5.2, send an empty Last-Modified header, but only as a
-		        // last resort to override a header already sent. #WP23021
-		        foreach ( headers_list() as $header ) {
-			        if ( 0 === stripos( $header, 'Last-Modified' ) ) {
-				        $headers['Last-Modified'] = '';
-				        break;
-			        }
-		        }
-	        }
+	            // In PHP 5.3+, make sure we are not sending a Last-Modified header.
+	            if ( function_exists( 'header_remove' ) ) {
+		            @header_remove( 'Last-Modified' );
+	            } else {
+		            // In PHP 5.2, send an empty Last-Modified header, but only as a
+		            // last resort to override a header already sent. #WP23021
+		            foreach ( headers_list() as $header ) {
+			            if ( 0 === stripos( $header, 'Last-Modified' ) ) {
+				            $headers['Last-Modified'] = '';
+				            break;
+			            }
+		            }
+	            }
 
-	        foreach( $headers as $name => $field_value )
-		        @header("{$name}: {$field_value}");
+	            foreach( $headers as $name => $field_value )
+		            @header("{$name}: {$field_value}");
+            }
         }
     }
 
@@ -1475,6 +1489,7 @@ class Learnstones_Plugin
 	{
 		if ($post->post_type == self::LS_TYPE_LESSON){
 	             $actions['dashboard'] = "<a title='" . esc_attr(__('Dashboard')) . "' href='" . add_query_arg( array(self::LS_FLD_DASH => "1"), get_permalink( $post )) . "'>" . __('Dashboard') . "</a>";
+	             $actions['pdf'] = "<a title='" . esc_attr(__('PDF')) . "' href='" . add_query_arg( array(self::LS_FLD_PDF => "1"), get_permalink( $post )) . "'>" . __('PDF') . "</a>";
 		}
 		return $actions;
 	}
@@ -1528,6 +1543,8 @@ class Learnstones_Plugin
   		$this->add_settings_field_to_tab(self::LS_OPT_DOMAINS, 'Domains:', self::LS_OPT_GOOGLE);
   		$this->add_settings_field_to_tab(self::LS_OPT_MESSAGE, 'Login Message:', self::LS_OPT_MAIN, self::LS_MSG_LOGIN);
   		$this->add_settings_field_to_tab(self::LS_OPT_LIGHTS, 'Lights:', self::LS_OPT_MAIN, $this->LS_LIGHTS_DEFAULT);
+  		$this->add_settings_field_to_tab(self::LS_OPT_DOMAINS, 'Domains:', self::LS_OPT_GOOGLE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_PDF_LIGHTS, 'PDF Lights Text:', self::LS_OPT_PDF, self::LS_PDF_LIGHTS_DEFAULT);
 	}
 
     function add_settings_field_to_tab($option, $caption, $tab, $default = "")
@@ -1619,7 +1636,7 @@ class Learnstones_Plugin
 		elseif($arg == self::LS_OPT_DOMAINS) { ?>
             <textarea name='<?php echo $current_tab . "[" . $arg . "]" ?>'  class="ls_domains"><?php echo($val)?></textarea><p class="ls_domains">Comma delimited list of domains</p><?php
         }
-		elseif($arg == self::LS_OPT_MESSAGE) { ?>
+		elseif($arg == self::LS_OPT_MESSAGE ||$arg == self::LS_OPT_PDF_LIGHTS) { ?>
             <textarea name='<?php echo $current_tab . "[" . $arg . "]" ?>'  class="ls_loginmsg"><?php echo($val)?></textarea><?php
         }
 		elseif($arg == self::LS_OPT_LOGIN_WARN) { ?>
@@ -3301,7 +3318,7 @@ class Learnstones_Plugin
         $ret = $content;
 		if( is_singular()) {
             if(get_post_type() == self::LS_TYPE_LESSON) {
-			    if($this->dashboard) {
+			    if ($this->dashboard) {
                     $post_id = get_the_ID();
                     $ret = $this->get_new_order($post_id, array(), TRUE);
                     $error = $ret[0];
@@ -3627,7 +3644,27 @@ class Learnstones_Plugin
                     }
                     $ret .= "</form></div>";
 			    }
-			    else
+			    elseif($this->pdf === TRUE) {
+                    if($error == self::LS_STATUS_OK)
+                    {
+                        ob_clean();
+                        $author = get_the_author_meta('display_name', get_post_field('post_author', get_the_ID()));
+                        $pdf = new LearnstonesPDF(get_the_title(), $author, get_permalink());
+                        
+                        $pdf->add_css(plugins_url('css/ls_pdf.css', __FILE__));
+    		            $slides = explode(self::LS_SPLITTER, $content);
+                        $pdfopts = get_option(self::LS_OPT_PDF);
+                        $pdflights = isset($pdfopts[self::LS_OPT_PDF_LIGHTS]) ? $pdfopts[self::LS_OPT_PDF_LIGHTS] : self::LS_PDF_LIGHTS_DEFAULT;
+    		            foreach($slides as $key => $value) {
+                            $value = do_shortcode($value);
+                            $pdf->add_slide($value, $pdflights);
+                        }
+                        $pdf->output(get_the_title());
+                        die();
+                        
+                    }
+                }
+                else
 			    {
 				    $postId = get_the_ID();
                     $error = $this->get_lesson_error();
@@ -3831,8 +3868,15 @@ class Learnstones_Plugin
         }
         if(!empty($name))
         {
-            $ret = "<input type='text' value='$val' name='lsi_$name' />";
-            $this->shortcode_fields[$name] = $this->shortcode_ls;
+            if($this->pdf)
+            {
+                $ret = "__________________";
+            }
+            else
+            {
+                $ret = "<input type='text' value='$val' name='lsi_$name' />";
+                $this->shortcode_fields[$name] = $this->shortcode_ls;
+            }
         }
         return $ret;   
     }
