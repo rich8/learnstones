@@ -13,8 +13,8 @@ require_once( ABSPATH . 'wp-admin/includes/template.php');
 require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 require_once('simple_html_dom.php');
 require_once('http_build_url.php');
-require_once 'google-api-php-client-master/src/Google/Client.php';
-
+require_once('google-api-php-client-master/src/Google/Client.php');
+require_once('include/lspdf.php');
 class Learnstones_Plugin
 {
 
@@ -39,18 +39,21 @@ class Learnstones_Plugin
 	const LS_TYPE_CLASS = "ls_class";
 
     // Options page stuff
-	const LS_OPTIONS = "ls_options";
 	const LS_OPT_SESSION_DURATION = "duration";
 	const LS_OPT_SESSION_PURGE = "purge";
   	const LS_OPT_SLIDE = "slide";
   	const LS_OPT_CLASSID_SIZE = "clsidsize";
   	const LS_OPT_CLASSID_CHARS = "clsidchars";
   	const LS_OPT_INPUT_DISP = "inputdisp";
+  	const LS_OPT_GOOGLE_ENABLE = "genable";
   	const LS_OPT_GOOGLE_CLIENT_ID = "gclient";
   	const LS_OPT_GOOGLE_CLIENT_SECRET = "gsecret";
   	const LS_OPT_GOOGLE_KEY = "gkey";
+    const LS_OPT_DOMAINS_ENABLE = "domainsenable";
     const LS_OPT_DOMAINS = "domains";
     const LS_OPT_MESSAGE = "message";
+    const LS_OPT_LIGHTS = "lights";
+    const LS_OPT_PDF_LIGHTS = "pdflights";
 
     // Website options
 	const LS_OPT_DB_VERSION = "ls_db_version";
@@ -86,6 +89,7 @@ class Learnstones_Plugin
     const LS_FLD_LEARNSTONE = 'ls_ls';
     const LS_FLD_UVNAME = 'ls_name';
     const LS_FLD_DASH = "ls_db";
+    const LS_FLD_PDF = "ls_pdf";
     const LS_FLD_SEARCH_TYPE = "ls_search_in";
     const LS_FLD_TITLE = "ls_title";
     const LS_FLD_POST_ID = "post_id";
@@ -132,12 +136,25 @@ class Learnstones_Plugin
     const LS_CLS_CHARS = "ABCDEFGHIJKLMNPQRSTUVWXYZ123456789";
     const LS_CLS_CODE_SIZE = 6;
 
+    const LS_PDF_LIGHTS_DEFAULT = '<p class="lights">Lights image and text</p>';
+
     const LS_NAME_UNVERIFIED = "(Unverified)";
 
     const LS_MSG_LOGIN = "<p>Welcome to Learnstones.  <b>Do not</b> enter your username or password here, if you are logging in with Learnstones validated Google account.  Otherwise use your Learnstones log in details and click the alternative log in button.</p>";
 
     const LS_SVC_WORDPRESS = 0;
     const LS_SVC_GOOGLE = 1;
+
+    const LS_OPT_MAIN = 'ls_options';
+    const LS_OPT_GOOGLE = 'ls_options_google';
+    const LS_OPT_PDF = 'ls_options_pdf';
+    private $LS_OPT_SECTIONS = array(self::LS_OPT_MAIN=>'Main Settings', self::LS_OPT_GOOGLE=>'Google Settings',self::LS_OPT_PDF=>'PDF Settings');
+
+    private $LS_LIGHTS_DEFAULT = array(
+                            "l1" => "I don't understand",
+                            "l2" => "I'm not sure",
+                            "l3" => "I get it"
+                        );
 
 	private $session_id = -1;
     private $session_class;
@@ -148,11 +165,7 @@ class Learnstones_Plugin
     private $session_service = self::LS_SVC_WORDPRESS;
     private $session_stone = 0;
     private $lesson_data = 0;
-    private $lights = array(
-                            "l1" => "I don't understand",
-                            "l2" => "I'm not sure",
-                            "l3" => "I get it"
-                        );
+    private $lights;
     private $shortcode_error;
     private $shortcode_validation;
     private $shortcode_fields = array();
@@ -160,6 +173,7 @@ class Learnstones_Plugin
     private $valid_class = TRUE;
     private $select_learnstone = 0;
     private $dashboard = FALSE;
+    private $pdf = FALSE;
     private $max_width = 640;
     private $settings_page;
     private $login_redirect;
@@ -272,30 +286,38 @@ class Learnstones_Plugin
 
         if(is_singular(self::LS_TYPE_LESSON))
         {
-            // This is a copy nocache_headers, with no-store added, awaiting wp fix
+            if(isset($_GET[self::LS_FLD_PDF]))
+            {   
+                $this->pdf = TRUE;
+                ob_start();
+            }
+            else
+            {
+                // This fis a copy nocache_headers, with no-store added, awaiting wp fix
 
-	        $headers = wp_get_nocache_headers();
+	            $headers = wp_get_nocache_headers();
 
-            $headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0';
+                $headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0';
 
-	        unset( $headers['Last-Modified'] );
+	            unset( $headers['Last-Modified'] );
 
-	        // In PHP 5.3+, make sure we are not sending a Last-Modified header.
-	        if ( function_exists( 'header_remove' ) ) {
-		        @header_remove( 'Last-Modified' );
-	        } else {
-		        // In PHP 5.2, send an empty Last-Modified header, but only as a
-		        // last resort to override a header already sent. #WP23021
-		        foreach ( headers_list() as $header ) {
-			        if ( 0 === stripos( $header, 'Last-Modified' ) ) {
-				        $headers['Last-Modified'] = '';
-				        break;
-			        }
-		        }
-	        }
+	            // In PHP 5.3+, make sure we are not sending a Last-Modified header.
+	            if ( function_exists( 'header_remove' ) ) {
+		            @header_remove( 'Last-Modified' );
+	            } else {
+		            // In PHP 5.2, send an empty Last-Modified header, but only as a
+		            // last resort to override a header already sent. #WP23021
+		            foreach ( headers_list() as $header ) {
+			            if ( 0 === stripos( $header, 'Last-Modified' ) ) {
+				            $headers['Last-Modified'] = '';
+				            break;
+			            }
+		            }
+	            }
 
-	        foreach( $headers as $name => $field_value )
-		        @header("{$name}: {$field_value}");
+	            foreach( $headers as $name => $field_value )
+		            @header("{$name}: {$field_value}");
+            }
         }
     }
 
@@ -309,7 +331,7 @@ class Learnstones_Plugin
         $name = $this->session_name;
         if(isset($_POST[self::LS_FLD_GOOGLE_LI]))
         {
-            $options = get_option(self::LS_OPTIONS);
+            $options = get_option(self::LS_OPT_MAIN);
 
             $state = md5(rand());
 
@@ -375,7 +397,7 @@ class Learnstones_Plugin
                 $client = new Google_Client();
                 $client->setApplicationName('learnstones');
 
-                $options = get_option(self::LS_OPTIONS);
+                $options = get_option(self::LS_OPT_GOOGLE);
                 $gclientId = "";
                 if(isset($options[self::LS_OPT_GOOGLE_CLIENT_ID]))
                 {
@@ -432,7 +454,7 @@ class Learnstones_Plugin
                             else
                             {
                                 $domains = array();
-                                if(isset($options[self::LS_OPT_DOMAINS]))
+                                if(isset($options[self::LS_OPT_DOMAINS_ENABLE]) && !empty($options[self::LS_OPT_DOMAINS_ENABLE]) && isset($options[self::LS_OPT_DOMAINS]))
                                 {
                                     $domains = explode(',', $options[self::LS_OPT_DOMAINS]);
                                     if(empty($domains[0]) && count($domains) == 1)
@@ -796,7 +818,8 @@ class Learnstones_Plugin
 						'has_archive' => true,
 						'show_in_menu' => true,
                         'menu_position' => 5,
-                        'rewrite' => array('slug' => 'classes')  
+                        'rewrite' => array('slug' => 'classes'),
+                        'menu_icon' => 'dashicons-groups'
 					)
 
 		);
@@ -825,7 +848,8 @@ class Learnstones_Plugin
 						'show_in_menu' => true,
                         'menu_position' => 6,
                         'supports' => array('title'),
-                        'rewrite' => array('slug' => 'courses')
+                        'rewrite' => array('slug' => 'courses'),
+                        'menu_icon' => 'dashicons-book-alt'
 					)
 
 		);
@@ -856,7 +880,8 @@ class Learnstones_Plugin
 						'has_archive' => true,
 						'show_in_menu' => true,
                         'menu_position' => 7,
-                        'rewrite' => array('slug' => 'lessons')
+                        'rewrite' => array('slug' => 'lessons'),
+                        'menu_icon' => 'dashicons-welcome-learn-more'
 						//'capability_type' => 'lessons',
 						//'capabilities' => $caps,
 						//'map_meta_cap' => true,
@@ -1284,7 +1309,7 @@ class Learnstones_Plugin
             }
             $lsAjaxDat['lss'] = $lsad;
             $lsAjaxDat['select'] = $this->select_learnstone;
-            $options = get_option(self::LS_OPTIONS);
+            $options = get_option(self::LS_OPT_MAIN);
 		    $slide = "default";
 		    if(isset($options[self::LS_OPT_SLIDE]))
 		    {
@@ -1300,7 +1325,7 @@ class Learnstones_Plugin
 				    {
 					    $slide = $slideshow;
 					    $options[self::LS_OPT_SLIDE] = $slideshow;
-					    update_option(self::LS_OPTIONS, $options);
+					    update_option(self::LS_OPT_MAIN, $options);
 					    break;
 				    }
 			    }
@@ -1464,6 +1489,7 @@ class Learnstones_Plugin
 	{
 		if ($post->post_type == self::LS_TYPE_LESSON){
 	             $actions['dashboard'] = "<a title='" . esc_attr(__('Dashboard')) . "' href='" . add_query_arg( array(self::LS_FLD_DASH => "1"), get_permalink( $post )) . "'>" . __('Dashboard') . "</a>";
+	             $actions['pdf'] = "<a title='" . esc_attr(__('PDF')) . "' href='" . add_query_arg( array(self::LS_FLD_PDF => "1"), get_permalink( $post )) . "'>" . __('PDF') . "</a>";
 		}
 		return $actions;
 	}
@@ -1476,13 +1502,20 @@ class Learnstones_Plugin
 	}
 
 	function build_options_page() {
+        $current_tab = isset($_GET['tab']) ? $_GET['tab'] : self::LS_OPT_MAIN;
 		?>
+            <h2 class="nav-tab-wrapper"><?php
+                foreach($this->LS_OPT_SECTIONS as $t => $caption )
+                {
+                    echo ("<a class='nav-tab " . ($current_tab == $t ? 'nav-tab-active' : '') . "' href='?page=" . __FILE__ . "&tab=$t'>$caption</a>");
+                } ?>
+            </h2>
 			<div id="wrap">
 				<div class="icon32" id="icon-tools"> <br /> </div>
 				<h2>Learnstones Options</h2>
 				<form method="post" action="options.php">
-					<?php settings_fields(self::LS_OPTIONS); ?>
-					<?php do_settings_sections(__FILE__); ?>
+					<?php settings_fields($current_tab); ?>
+					<?php do_settings_sections($current_tab); ?>
 					<?php submit_button(); ?>
 				</form>
 			</div>
@@ -1490,141 +1523,124 @@ class Learnstones_Plugin
 	}
 
 	function admin_init() {
-		register_setting(self::LS_OPTIONS, self::LS_OPTIONS, array($this, 'register_setting'));
-		add_settings_section('ls_main_section', 'Main Settings', array($this, 'add_settings_section'), __FILE__);
-		add_settings_field(self::LS_OPT_SESSION_DURATION, 'Learnstones Session Duration:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_SESSION_DURATION);
-		add_settings_field(self::LS_OPT_SESSION_PURGE, 'Purge Sessions from Database:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_SESSION_PURGE);
-  		add_settings_field(self::LS_OPT_SLIDE, 'Slideshow:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_SLIDE);
-  		add_settings_field(self::LS_OPT_LOGIN_WARN, 'Login Warning:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_LOGIN_WARN);
-  		add_settings_field(self::LS_OPT_CLASSID_SIZE, 'Class Id Size:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_CLASSID_SIZE);
-  		add_settings_field(self::LS_OPT_CLASSID_CHARS, 'Class Id Chars:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_CLASSID_CHARS);
-  		add_settings_field(self::LS_OPT_INPUT_DISP, 'Input Dashboard Formats:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_INPUT_DISP);
-  		add_settings_field(self::LS_OPT_GOOGLE_CLIENT_ID, 'Google Client Id:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_GOOGLE_CLIENT_ID);
-  		add_settings_field(self::LS_OPT_GOOGLE_CLIENT_SECRET, 'Google Client Secret:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_GOOGLE_CLIENT_SECRET);
-  		add_settings_field(self::LS_OPT_GOOGLE_KEY, 'Google Server Key:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_GOOGLE_KEY);
-  		add_settings_field(self::LS_OPT_DOMAINS, 'Domains:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_DOMAINS);
-  		add_settings_field(self::LS_OPT_MESSAGE, 'Login Message:', array($this, 'add_settings_field'), __FILE__, 'ls_main_section', self::LS_OPT_MESSAGE);
+        foreach($this->LS_OPT_SECTIONS as $setting => $caption)
+        {
+    		register_setting($setting, $setting);
+   	    	add_settings_section($setting . "section", $caption, array($this, 'add_settings_section'), $setting);                        
+        }
+		$this->add_settings_field_to_tab(self::LS_OPT_SESSION_DURATION, 'Learnstones Session Duration:', self::LS_OPT_MAIN, 0);
+		$this->add_settings_field_to_tab(self::LS_OPT_SESSION_PURGE, 'Purge Sessions from Database:', self::LS_OPT_MAIN, 0);
+  		$this->add_settings_field_to_tab(self::LS_OPT_SLIDE, 'Slideshow:', self::LS_OPT_MAIN, "oconner");
+  		$this->add_settings_field_to_tab(self::LS_OPT_LOGIN_WARN, 'Login Warning:', self::LS_OPT_MAIN, self::LS_OPT_LOGIN_WARN_DEFAULT);
+  		$this->add_settings_field_to_tab(self::LS_OPT_CLASSID_SIZE, 'Class Id Size:', self::LS_OPT_MAIN, self::LS_CLS_CODE_SIZE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_CLASSID_CHARS, 'Class Id Chars:', self::LS_OPT_MAIN, self::LS_CLS_CHARS);
+  		$this->add_settings_field_to_tab(self::LS_OPT_INPUT_DISP, 'Input Dashboard Formats:', self::LS_OPT_MAIN, array());
+  		$this->add_settings_field_to_tab(self::LS_OPT_GOOGLE_ENABLE, 'Google Login:', self::LS_OPT_GOOGLE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_GOOGLE_CLIENT_ID, 'Google Client Id:', self::LS_OPT_GOOGLE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_GOOGLE_CLIENT_SECRET, 'Google Client Secret:', self::LS_OPT_GOOGLE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_GOOGLE_KEY, 'Google Server Key:', self::LS_OPT_GOOGLE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_DOMAINS_ENABLE, 'Filter Domains:', self::LS_OPT_GOOGLE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_DOMAINS, 'Domains:', self::LS_OPT_GOOGLE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_MESSAGE, 'Login Message:', self::LS_OPT_MAIN, self::LS_MSG_LOGIN);
+  		$this->add_settings_field_to_tab(self::LS_OPT_LIGHTS, 'Lights:', self::LS_OPT_MAIN, $this->LS_LIGHTS_DEFAULT);
+  		$this->add_settings_field_to_tab(self::LS_OPT_DOMAINS, 'Domains:', self::LS_OPT_GOOGLE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_PDF_LIGHTS, 'PDF Lights Text:', self::LS_OPT_PDF, self::LS_PDF_LIGHTS_DEFAULT);
 	}
 
-	function register_setting($ls_options) {
-		return $ls_options;
-	}
+    function add_settings_field_to_tab($option, $caption, $tab, $default = "")
+    {
+        add_settings_field($option, $caption, array($this, 'add_settings_field'), $tab, $tab . "section", array($option, $tab, $default));
+    }
 
 	function add_settings_section() {
 	}
 
-	function add_settings_field($arg) {
-		$options = get_option(self::LS_OPTIONS);
+	function add_settings_field($args) {
+        $current_tab = isset($_GET['tab']) ? $_GET['tab'] : self::LS_OPT_MAIN;
+
+		$options = get_option($current_tab);
+        $arg = $args[0];
+        if(isset($options[$arg]))
+        {
+            $val = $options[$arg];
+        }
+        else
+        {
+            $val = $args[2];
+        } 
+
 		if($arg == self::LS_OPT_SESSION_DURATION)
 		{ ?>
-			<select name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' >
-				<option value='0'		<?php if($options[self::LS_OPT_SESSION_DURATION] == 0) { echo "selected='true'"; } ?>>Browser Session</option>
-				<option value='86400'		<?php if($options[self::LS_OPT_SESSION_DURATION] == 86400) { echo "selected='true'"; } ?>>1 Day</option>
-				<option value='2592000'		<?php if($options[self::LS_OPT_SESSION_DURATION] == 2592000) { echo "selected='true'"; } ?>>30 Days</option>
-				<option value='31536000'	<?php if($options[self::LS_OPT_SESSION_DURATION] == 31536000) { echo "selected='true'"; } ?>>1 Year</option>
+			<select name='<?php echo $current_tab . "[" . $arg . "]" ?>' >
+				<option value='0'		<?php if($val == 0) { echo "selected='true'"; } ?>>Browser Session</option>
+				<option value='86400'		<?php if($val == 86400) { echo "selected='true'"; } ?>>1 Day</option>
+				<option value='2592000'		<?php if($val == 2592000) { echo "selected='true'"; } ?>>30 Days</option>
+				<option value='31536000'	<?php if($val == 31536000) { echo "selected='true'"; } ?>>1 Year</option>
 			</select> <?php
 		}
 		elseif($arg == self::LS_OPT_SESSION_PURGE)
 		{ ?>
-			<select name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' >
-				<option value='0'		<?php if($options[self::LS_OPT_SESSION_PURGE] == 0) { echo "selected='true'"; } ?>>Never</option>
-				<option value='86400'		<?php if($options[self::LS_OPT_SESSION_PURGE] == 86400) { echo "selected='true'"; } ?>>1 Day</option>
-				<option value='2592000'		<?php if($options[self::LS_OPT_SESSION_PURGE] == 2592000) { echo "selected='true'"; } ?>>30 Days</option>
-				<option value='31536000'	<?php if($options[self::LS_OPT_SESSION_PURGE] == 31536000) { echo "selected='true'"; } ?>>1 Year</option>
+			<select name='<?php echo $current_tab . "[" . $arg . "]" ?>' >
+				<option value='0'		<?php if($val == 0) { echo "selected='true'"; } ?>>Never</option>
+				<option value='86400'		<?php if($val == 86400) { echo "selected='true'"; } ?>>1 Day</option>
+				<option value='2592000'		<?php if($val == 2592000) { echo "selected='true'"; } ?>>30 Days</option>
+				<option value='31536000'	<?php if($val == 31536000) { echo "selected='true'"; } ?>>1 Year</option>
 			</select> <?php
 		}
 		elseif($arg == self::LS_OPT_INPUT_DISP) {
-            $rows = array();
-            if(isset($options[$arg]))
-            {
-                $rows = $options[$arg];
-            }?>
-            <table id="ls_input_disp">
-                <tr><th>Name</th><th>Format</th><th>Link?</th><th>Delete?</th></tr><?php
+            ?>
+            <table class="wp-list-table widefat"  id="ls_input_disp">
+                <thead><tr><th class="check-column ls_setting_th">Name</th><th  class="check-column ls_setting_th">Format</th><th class="check-column ls_setting_th">Link?</th><th class="check-column ls_setting_th">Delete?</th></tr></thead><tbody><?php
                 $index = 0;
-                $optprefix = self::LS_OPTIONS . "[" . self::LS_OPT_INPUT_DISP . "]";
-                foreach($rows as $row)
+                $optprefix = $current_tab . "[" . self::LS_OPT_INPUT_DISP . "]";
+                foreach($val as $row)
                 {
                     if(!isset($row['deleted'])
-                     && (!empty($row['name']) || !empty($row['format']))
+                        && (!empty($row['name']) || !empty($row['format']))
                         ) {?>
                         <tr><td><input class='ls_ph' placeholder="New Input Format Name" name="<?php echo($optprefix . "[" . $index . "][name]") ?>" type="text" value="<?php echo($row['name'])?>" /></td><td><input class="ls_setting ls_ph" name="<?php echo($optprefix . "[" . $index . "][format]") ?>" type="text" value="<?php echo($row['format'])?>" placeholder="New Format" /><?php if(strpos(strtolower($row['format']), self::LS_TOK_INPUT) === FALSE){echo "<br />No " . self::LS_TOK_INPUT . " token"; }?></td><td><input  name="<?php echo($optprefix . "[" . $index . "][url]") ?>" type="checkbox" <?php if(isset($row['url'])) { echo "checked"; }?> /></td><td><input  name="<?php echo($optprefix . "[" . $index . "][deleted]") ?>" type="checkbox" <?php if(isset($row['deleted'])) { echo "checked"; }?> /></td></tr><?php 
                         $index++;
                     }
                 }?>
                 <tr><td><input class='ls_ph' placeholder="New Input Format Name" name="<?php echo($optprefix . "[" . $index . "][name]") ?>" type="text" value="" /></td><td><input class="ls_setting ls_ph" placeholder="New Format" name="<?php echo($optprefix . "[" . $index . "][format]") ?>" type="text" value="" /></td><td><input  name="<?php echo($optprefix . "[" . $index . "][url]") ?>" type="checkbox" /></td></tr>
+            </tbody></table><?php 
+        }
+        elseif($arg == self::LS_OPT_LIGHTS) {
+            ?>
+            <table class="wp-list-table widefat" id="ls_lights_captions"><thead>
+                <tr><th class="check-column ls_setting_th">Light</th><th class="check-column ls_setting_th">Caption</th></tr></thead><tbody><?php
+                foreach($val as $light => $caption)
+                {
+                     $optprefix = $current_tab . "[" . self::LS_OPT_LIGHTS . "][$light]";?>
+                     <tr><td><?php echo($light); ?></td><td><input class='ls_setting ls_ph' placeholder="New Light Caption" name="<?php echo($optprefix) ?>" type="text" value="<?php echo($caption)?>" /></td></tr><?php 
+                }?></tbody>
             </table><?php 
         }
-		elseif($arg == self::LS_OPT_CLASSID_SIZE) {
-            if(isset($options[$arg]))
-            {
-                $val = $options[$arg];
-            }
-            else
-            {
-                $val = self::LS_CLS_CODE_SIZE;
-            }   ?>
-			<select name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' ><?php
+		elseif($arg == self::LS_OPT_CLASSID_SIZE) {?>
+			<select name='<?php echo $current_tab . "[" . $arg . "]" ?>' ><?php
                 for($loop = 1; $loop <=12; $loop++)
                 {?>                                   ?>
-				    <option value='<?php echo($loop); ?>'<?php if($val == $loop) { echo "selected='true'"; } ?>><?php echo($loop); ?></option><?php                     
+				    <option value='<?php echo($loop); ?>'<?php if($val == $loop) { echo " selected='true'"; } ?>><?php echo($loop); ?></option><?php                     
                 }?>
             </select><?php 
         }
-		elseif($arg == self::LS_OPT_GOOGLE_CLIENT_ID || $arg == self::LS_OPT_GOOGLE_CLIENT_SECRET || $arg == self::LS_OPT_GOOGLE_KEY) {
-            if(isset($options[$arg]))
-            {
-                $val = $options[$arg];
-            }
-            else
-            {
-                $val = "";
-            }   ?>
-			<input type="text" class="ls_setting" name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' value="<?php echo(esc_attr($val)) ?>"/><?php  
+		elseif($arg == self::LS_OPT_GOOGLE_ENABLE || $arg == self::LS_OPT_DOMAINS_ENABLE) { ?>
+			<input type="checkbox" name='<?php echo $current_tab . "[" . $arg . "]" ?>' <?php if(!empty($val)) { echo "checked"; }?> /><?php  
         }
-		elseif($arg == self::LS_OPT_CLASSID_CHARS) {
-            if(isset($options[$arg]))
-            {
-                $val = $options[$arg];
-            }
-            else
-            {
-                $val = self::LS_CLS_CHARS;
-            }   ?>
-			<input type="text" class="ls_setting" name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' value="<?php echo(esc_attr($val)) ?>"/><?php  
+		elseif($arg == self::LS_OPT_GOOGLE_CLIENT_ID || $arg == self::LS_OPT_GOOGLE_CLIENT_SECRET || $arg == self::LS_OPT_GOOGLE_KEY) { ?>
+			<input type="text" class="ls_setting" name='<?php echo $current_tab . "[" . $arg . "]" ?>' value="<?php echo(esc_attr($val)) ?>"/><?php  
         }
-		elseif($arg == self::LS_OPT_DOMAINS) { 
-            if(isset($options[$arg]))
-            {
-                $val = $options[$arg];
-            }
-            else
-            {
-                $val = "";
-            }   ?>
-            <textarea name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>'  class="ls_domains"><?php echo($val)?></textarea><p class="ls_domains">Comma delimited list of domains</p><?php
+		elseif($arg == self::LS_OPT_CLASSID_CHARS) { ?>
+			<input type="text" class="ls_setting" name='<?php echo $current_tab . "[" . $arg . "]" ?>' value="<?php echo(esc_attr($val)) ?>"/><?php  
         }
-		elseif($arg == self::LS_OPT_MESSAGE) { 
-            if(isset($options[$arg]))
-            {
-                $val = $options[$arg];
-            }
-            else
-            {
-                $val = self::LS_MSG_LOGIN;
-            }   ?>
-            <textarea name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>'  class="ls_loginmsg"><?php echo($val)?></textarea><?php
+		elseif($arg == self::LS_OPT_DOMAINS) { ?>
+            <textarea name='<?php echo $current_tab . "[" . $arg . "]" ?>'  class="ls_domains"><?php echo($val)?></textarea><p class="ls_domains">Comma delimited list of domains</p><?php
         }
-		elseif($arg == self::LS_OPT_LOGIN_WARN) {
-            if(isset($options[$arg]))
-            {
-                $val = $options[$arg];
-            }
-            else
-            {
-                $val = self::LS_OPT_LOGIN_WARN_DEFAULT;
-            }   ?>
-			<select name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' >
+		elseif($arg == self::LS_OPT_MESSAGE ||$arg == self::LS_OPT_PDF_LIGHTS) { ?>
+            <textarea name='<?php echo $current_tab . "[" . $arg . "]" ?>'  class="ls_loginmsg"><?php echo($val)?></textarea><?php
+        }
+		elseif($arg == self::LS_OPT_LOGIN_WARN) { ?>
+			<select name='<?php echo $current_tab . "[" . $arg . "]" ?>' >
 				<option value='0'		<?php if($val == 0) { echo "selected='true'"; } ?>>Never</option>
 				<option value='60'		<?php if($val == 60) { echo "selected='true'"; } ?>>1 Minute</option>
 				<option value='300'		<?php if($val == 300) { echo "selected='true'"; } ?>>5 Minutes</option>
@@ -1636,12 +1652,12 @@ class Learnstones_Plugin
         else
         {
             $slideshows = scandir(plugin_dir_path(__FILE__) . self::LS_SLIDESHOW_FOLDER); ?>
-			<select name='<?php echo self::LS_OPTIONS . "[" . $arg . "]" ?>' ><?php
+			<select name='<?php echo $current_tab . "[" . $arg . "]" ?>' ><?php
 				foreach($slideshows as $slideshow)
 				{
 					if(strpos($slideshow, ".") !== 0)
 					{?>
-						<option value='<?php echo $slideshow; ?>' <?php if($options[self::LS_OPT_SLIDE] == $slideshow) { echo "selected='true'"; } ?>><?php count($slideshows); ?><?php echo $slideshow; ?></option><?php
+						<option value='<?php echo $slideshow; ?>' <?php if($val == $slideshow) { echo "selected='true'"; } ?>><?php count($slideshows); ?><?php echo $slideshow; ?></option><?php
 					}
 				} ?>
 			</select> <?php
@@ -2267,7 +2283,7 @@ class Learnstones_Plugin
 
 	function login_message()
     {
-        $options = get_option(self::LS_OPTIONS);
+        $options = get_option(self::LS_OPT_MAIN);
         if(isset($options[self::LS_OPT_MESSAGE]))
         {
             echo($options[self::LS_OPT_MESSAGE]);            
@@ -2305,8 +2321,8 @@ class Learnstones_Plugin
             }
             $ret .= "</label></p>";
         }
-        $options = get_option(self::LS_OPTIONS);
-        if(isset($options[self::LS_OPT_GOOGLE_CLIENT_ID]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID]))
+        $options = get_option(self::LS_OPT_GOOGLE);
+        if(isset($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID]))
         {
             $ret .= "<hr class='ls_loginhr'>";
             $ret .= "<p class='ls_loginp'>";
@@ -2810,7 +2826,7 @@ class Learnstones_Plugin
 			    }
     		}
 
-            $options = get_option(self::LS_OPTIONS);
+            $options = get_option(self::LS_OPT_MAIN);
 		    if($options[self::LS_OPT_SESSION_DURATION] == 0)
 		    {
 			    setcookie(self::LS_COOKIE, $this->session_id, 0);
@@ -3302,7 +3318,7 @@ class Learnstones_Plugin
         $ret = $content;
 		if( is_singular()) {
             if(get_post_type() == self::LS_TYPE_LESSON) {
-			    if($this->dashboard) {
+			    if ($this->dashboard) {
                     $post_id = get_the_ID();
                     $ret = $this->get_new_order($post_id, array(), TRUE);
                     $error = $ret[0];
@@ -3365,7 +3381,7 @@ class Learnstones_Plugin
 
                         $dops = "<div id='ls_dops'>";
 
-                        $doptions = get_option(self::LS_OPTIONS);
+                        $doptions = get_option(self::LS_OPT_MAIN);
                         $values = array("(None)" => array(self::LS_TOK_INPUT, 0), "(URL)" => array(self::LS_TOK_INPUT , 1));
                         if(isset($doptions[self::LS_OPT_INPUT_DISP]))
                         {
@@ -3628,7 +3644,27 @@ class Learnstones_Plugin
                     }
                     $ret .= "</form></div>";
 			    }
-			    else
+			    elseif($this->pdf === TRUE) {
+                    if($error == self::LS_STATUS_OK)
+                    {
+                        ob_clean();
+                        $author = get_the_author_meta('display_name', get_post_field('post_author', get_the_ID()));
+                        $pdf = new LearnstonesPDF(get_the_title(), $author, get_permalink());
+                        
+                        $pdf->add_css(plugins_url('css/ls_pdf.css', __FILE__));
+    		            $slides = explode(self::LS_SPLITTER, $content);
+                        $pdfopts = get_option(self::LS_OPT_PDF);
+                        $pdflights = isset($pdfopts[self::LS_OPT_PDF_LIGHTS]) ? $pdfopts[self::LS_OPT_PDF_LIGHTS] : self::LS_PDF_LIGHTS_DEFAULT;
+    		            foreach($slides as $key => $value) {
+                            $value = do_shortcode($value);
+                            $pdf->add_slide($value, $pdflights);
+                        }
+                        $pdf->output(get_the_title());
+                        die();
+                        
+                    }
+                }
+                else
 			    {
 				    $postId = get_the_ID();
                     $error = $this->get_lesson_error();
@@ -3636,6 +3672,12 @@ class Learnstones_Plugin
                     {
                         $this->get_lesson_data();
                         $this->shortcode_validation = FALSE;
+                        $opts = get_option(self::LS_OPT_MAIN);
+                        $this->lights = $this->LS_LIGHTS_DEFAULT;
+                        if(isset($opts[self::LS_OPT_LIGHTS]))
+                        {
+                            $this->lights = array_merge($this->lights,$opts[self::LS_OPT_LIGHTS]);
+                        }
                         $ret = "<div id='ls_presentation'>";
                         $ret .= "<div id='ls_presentation_w'>Slide</div>";
                         $ret .= "</div>";
@@ -3714,8 +3756,8 @@ class Learnstones_Plugin
                                 $ret .= $classOutput;
                                 $ret .=         "<li class='$classLogin'><input type='hidden' name='post_id' value='" . get_the_ID() . "' /><input type='hidden' name='" . self::LS_FLD_STONE . "' value='' /><input name='ls_username' class='ls_username ls_ph' type='text' placeholder='" . __('Learnstones User') . "' value='" . esc_attr($this->session_name) . "'/><div class='ls_loginphide'>Please login to keep your results</div>&nbsp;<input name='ls_password' class='ls_password ls_ph' type='password' placeholder='" . __('Learnstones Password') . "'/>&nbsp;";
                                 $ret .= get_submit_button( __('Login'), 'secondary', 'ls_login', FALSE, array('id' => 'ls_login') ) . "</li>";
-                                $options = get_option(self::LS_OPTIONS);
-                                if(isset($options[self::LS_OPT_GOOGLE_CLIENT_ID]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID])) {
+                                $options = get_option(self::LS_OPT_GOOGLE);
+                                if(isset($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID])) {
                                     $ret .= "<li class='$classLogin'><input type='submit' class='ls_glogins' name='" . self::LS_FLD_GOOGLE_LI . "' class='ls_glogins' value='' /></li>";
                                 }
                                 $ret .=         "<li class='$classLogout'>" . __('Welcome,') . " <span class='ls_loginname'>$name</span></li><li class='$classLogout'><input type='submit' class='ls_menu_input' name='" . self::LS_FLD_LOGOUT . "' value='Log Out' /></li>";
@@ -3826,8 +3868,15 @@ class Learnstones_Plugin
         }
         if(!empty($name))
         {
-            $ret = "<input type='text' value='$val' name='lsi_$name' />";
-            $this->shortcode_fields[$name] = $this->shortcode_ls;
+            if($this->pdf)
+            {
+                $ret = "__________________";
+            }
+            else
+            {
+                $ret = "<input type='text' value='$val' name='lsi_$name' />";
+                $this->shortcode_fields[$name] = $this->shortcode_ls;
+            }
         }
         return $ret;   
     }
@@ -3902,8 +3951,8 @@ class Learnstones_Plugin
         if(!is_user_logged_in())
         {
             $ret .= "</li><li>Learnstones <a href='" . wp_login_url() . "'>Log in</a>";
-            $options = get_option(self::LS_OPTIONS);
-            if(isset($options[self::LS_OPT_GOOGLE_CLIENT_ID]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID]))
+            $options = get_option(self::LS_OPT_GOOGLE);
+            if(isset($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_ENABLE]) && !empty($options[self::LS_OPT_GOOGLE_CLIENT_ID]))
             { 
                 if(isset($_GET[self::LS_FLD_LOGGEDOUT]) && $this->session_service != self::LS_SVC_WORDPRESS)
                 {
@@ -3980,7 +4029,7 @@ class Learnstones_Plugin
     {
 
         $val = self::LS_CLS_CODE_SIZE;
-        $options = get_option(self::LS_OPTIONS);
+        $options = get_option(self::LS_OPT_MAIN);
         if(isset($options[self::LS_OPT_CLASSID_SIZE]))
         {
             $val = $options[self::LS_OPT_CLASSID_SIZE];
