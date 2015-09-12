@@ -4,7 +4,7 @@ Plugin Name: Learnstones
 Plugin URI: http://learnstones.com/
 Description: Does all our learnstones stuff.
 Author: Richard Drake and Raymond Francis 
-Version: 0.8
+Version: 0.8.1
 */
 
 //http://localhost/wordpress/?ls_lesson=whatstrto
@@ -2352,6 +2352,7 @@ class Learnstones_Plugin
         // copy to response data and input
         $this->get_session();
 		wp_set_current_user($user->ID);
+        $time = current_time('mysql');
 
         if($user != FALSE && !is_wp_error($user))
         {
@@ -2360,7 +2361,7 @@ class Learnstones_Plugin
                 $this->session_service = self::LS_SVC_WORDPRESS;
                 $this->session_name = $user->display_name; 
                 $table_name = $wpdb->prefix . self::LS_TBL_SESSION;
-                $wpdb->update($table_name, array('uvname' => $this->session_name, 'service' => $this->session_service, 'time' => current_time('mysql')), array('id' => $this->session_id), array("%s", "%d", "%s"), array("%d"));
+                $wpdb->update($table_name, array('uvname' => $this->session_name, 'service' => $this->session_service, 'time' => $time), array('id' => $this->session_id), array("%s", "%d", "%s"), array("%d"));
             }
         }
 
@@ -2385,10 +2386,10 @@ class Learnstones_Plugin
             $this->merge_learnstone_data($this->session_id, $user->ID, TRUE, TRUE);
         }
 
-        $table_name = self::LS_TBL_INPUTS;
+        $table_name = $wpdb->prefix . self::LS_TBL_INPUTS;
         $count = $wpdb->update($table_name, array('dbupdate' => $time), array('user' => get_current_user_id()), array('%s'), array('%d'));
 
-        $table_name = self::LS_TBL_RESPONSES;
+        $table_name = $wpdb->prefix . self::LS_TBL_RESPONSES;
         $count += $wpdb->update($table_name, array('dbupdate' => $time), array('user' => get_current_user_id()), array('%s'), array('%d'));
 
         $this->session_uvinput = ($count > 0) ? 1 : 0;
