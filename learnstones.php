@@ -4,7 +4,7 @@ Plugin Name: Learnstones
 Plugin URI: http://learnstones.com/
 Description: Does all our learnstones stuff.
 Author: Richard Drake and Raymond Francis 
-Version: 0.8.1
+Version: 0.8.2
 */
 
 //http://localhost/wordpress/?ls_lesson=whatstrto
