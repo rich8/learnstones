@@ -2,7 +2,7 @@
 /*
 Plugin Name: Learnstones
 Plugin URI: http://learnstones.com/
-Description: Does all our learnstones stuff.
+Description: Includes pdf print out (tcpdf included in this version, 0.8.2 will have tcpdf as a separate plugin).
 Author: Richard Drake and Raymond Francis 
 Version: 0.8.1
 */
