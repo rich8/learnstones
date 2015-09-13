@@ -9,12 +9,15 @@ Wordpress plugin used to create Learnstones lessons. Allows students to traffic 
 - See README2 for installation instructions
 
 
-###Version 0.8
+####Version 0.8  March 2015
 
 - Printing lesson in pdf in portrait form
 
 
-???Ray?
+???Ray can you fill in any of this?
 
-###Version 0.3
+####Version 0.3
+-  User Login?
+
+####Version 0.2
 - Students "traffic light" progress. Data not persisted between sessions.
