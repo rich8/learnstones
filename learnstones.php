@@ -4,7 +4,7 @@ Plugin Name: Learnstones
 Plugin URI: http://learnstones.com/
 Description: Includes pdf print out (tcpdf included in this version, 0.8.2 will have tcpdf as a separate plugin).
 Author: Richard Drake and Raymond Francis 
-Version: 0.8.1
+Version: 0.8.2
 */
 
 //http://localhost/wordpress/?ls_lesson=whatstrto
@@ -4574,16 +4574,23 @@ class Learnstones_Plugin
 
     function get_formatted_time($time)
     {
-        $d1 = date_create("now");
-        $d2 = date_create($time);
-        if($d1->format("Y-m-d") == $d2->format("Y-m-d"))
+        if($time == "--")
         {
-            $t = $d2->format("H:i:s");
+            $t = $time;
         }
         else
-        {
-            $di = date_diff(date_create($d1->format("Y-m-d")),date_create($d2->format("Y-m-d")));
-            $t = $di->format("%a days");
+        {            
+            $d1 = date_create("now");
+            $d2 = date_create($time);
+            if($d1->format("Y-m-d") == $d2->format("Y-m-d"))
+            {
+                $t = $d2->format("H:i:s");
+            }
+            else
+            {
+                $di = date_diff(date_create($d1->format("Y-m-d")),date_create($d2->format("Y-m-d")));
+                $t = $di->format("%a days");
+            }
         }
         return $t;
     }
