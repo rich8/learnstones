@@ -4,7 +4,7 @@ Plugin Name: Learnstones
 Plugin URI: http://learnstones.com/
 Description: Includes pdf print out (tcpdf included in this version, 0.8.2 will have tcpdf as a separate plugin).
 Author: Richard Drake and Raymond Francis 
-Version: 0.8.2
+Version: 0.8.3
 */
 
 //http://localhost/wordpress/?ls_lesson=whatstrto
@@ -4346,6 +4346,10 @@ class Learnstones_Plugin
                 {
                     $latest = $row->dbupdate;
                 }
+                if(!isset($userInClass[$user_key]))
+                {
+                    $userInClass[$user_key] = array(0, '--', $row->user, array(), $row->time);                            
+                }
                 if(($userInClass[$user_key][0] === 1) || ($lessonOwner && ($userInClass[$user_key][0] === 0 || $userInClass[$user_key][0] === 4)))
                 {
                     if($row->time > $userInClass[$user_key][1])
@@ -4385,6 +4389,10 @@ class Learnstones_Plugin
                 if($row->dbupdate > $latest)
                 {
                     $latest = $row->dbupdate;
+                }
+                if(!isset($userInClass[$user_key]))
+                {
+                    $userInClass[$user_key] = array(0, '--', $row->user, array(), $row->time);                            
                 }
                 if(($userInClass[$user_key][0] === 1) || ($lessonOwner && ($userInClass[$user_key][0] === 0 || $userInClass[$user_key][0] === 4)))
                 {
