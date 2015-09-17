@@ -2,9 +2,9 @@
 /*
 Plugin Name: Learnstones
 Plugin URI: http://learnstones.com/
-Description: Includes pdf print out (tcpdf included in this version, 0.8.2 will have tcpdf as a separate plugin).
+Description: Includes pdf print out (tcpdf included as plugin).
 Author: Richard Drake and Raymond Francis 
-Version: 0.8.3
+Version: 0.8.4
 */
 
 //http://localhost/wordpress/?ls_lesson=whatstrto
@@ -14,7 +14,12 @@ require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 require_once('simple_html_dom.php');
 require_once('http_build_url.php');
 require_once('google-api-php-client-master/src/Google/Client.php');
-require_once('include/lspdf.php');
+require_once( ABSPATH . 'wp-admin/includes/plugin.php');
+define('TCPDF_PLUGIN', "tcpdf/tcpdf.php");
+if(is_plugin_active(TCPDF_PLUGIN))
+{
+    require_once('include/lspdf.php');
+}
 class Learnstones_Plugin
 {
 
@@ -53,6 +58,7 @@ class Learnstones_Plugin
     const LS_OPT_DOMAINS = "domains";
     const LS_OPT_MESSAGE = "message";
     const LS_OPT_LIGHTS = "lights";
+    const LS_OPT_PDF_PLUGIN = "pdfplugin";
     const LS_OPT_PDF_LIGHTS = "pdflights";
 
     // Website options
@@ -1489,8 +1495,11 @@ class Learnstones_Plugin
 	{
 		if ($post->post_type == self::LS_TYPE_LESSON){
 	             $actions['dashboard'] = "<a title='" . esc_attr(__('Dashboard')) . "' href='" . add_query_arg( array(self::LS_FLD_DASH => "1"), get_permalink( $post )) . "'>" . __('Dashboard') . "</a>";
-	             $actions['pdf'] = "<a title='" . esc_attr(__('PDF')) . "' href='" . add_query_arg( array(self::LS_FLD_PDF => "1"), get_permalink( $post )) . "'>" . __('PDF') . "</a>";
-		}
+	             if(is_plugin_active(TCPDF_PLUGIN))
+                 {
+                     $actions['pdf'] = "<a title='" . esc_attr(__('PDF')) . "' href='" . add_query_arg( array(self::LS_FLD_PDF => "1"), get_permalink( $post )) . "'>" . __('PDF') . "</a>";
+	             }
+    	}
 		return $actions;
 	}
 
@@ -1544,6 +1553,7 @@ class Learnstones_Plugin
   		$this->add_settings_field_to_tab(self::LS_OPT_MESSAGE, 'Login Message:', self::LS_OPT_MAIN, self::LS_MSG_LOGIN);
   		$this->add_settings_field_to_tab(self::LS_OPT_LIGHTS, 'Lights:', self::LS_OPT_MAIN, $this->LS_LIGHTS_DEFAULT);
   		$this->add_settings_field_to_tab(self::LS_OPT_DOMAINS, 'Domains:', self::LS_OPT_GOOGLE);
+  		$this->add_settings_field_to_tab(self::LS_OPT_PDF_PLUGIN, 'PDF Plugin Active:', self::LS_OPT_PDF);
   		$this->add_settings_field_to_tab(self::LS_OPT_PDF_LIGHTS, 'PDF Lights Text:', self::LS_OPT_PDF, self::LS_PDF_LIGHTS_DEFAULT);
 	}
 
@@ -1635,6 +1645,17 @@ class Learnstones_Plugin
         }
 		elseif($arg == self::LS_OPT_DOMAINS) { ?>
             <textarea name='<?php echo $current_tab . "[" . $arg . "]" ?>'  class="ls_domains"><?php echo($val)?></textarea><p class="ls_domains">Comma delimited list of domains</p><?php
+        }
+		elseif($arg == self::LS_OPT_PDF_PLUGIN) {
+                if(is_plugin_active(TCPDF_PLUGIN))
+            {
+                echo("Plugin active.");
+            }
+            else
+            {
+                echo("Please install or activate TCPDF plugin to allow PDF generation.");             
+            }?>
+		    <input type="hidden" name='<?php echo $current_tab . "[" . $arg . "]" ?>' value=""/><?php  
         }
 		elseif($arg == self::LS_OPT_MESSAGE ||$arg == self::LS_OPT_PDF_LIGHTS) { ?>
             <textarea name='<?php echo $current_tab . "[" . $arg . "]" ?>'  class="ls_loginmsg"><?php echo($val)?></textarea><?php
@@ -3646,7 +3667,7 @@ class Learnstones_Plugin
                     $ret .= "</form></div>";
 			    }
 			    elseif($this->pdf === TRUE) {
-                    if($error == self::LS_STATUS_OK)
+                    if($error == self::LS_STATUS_OK && is_plugin_active(TCPDF_PLUGIN))
                     {
                         ob_clean();
                         $author = get_the_author_meta('display_name', get_post_field('post_author', get_the_ID()));
