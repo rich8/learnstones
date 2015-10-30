@@ -20,6 +20,12 @@
                 $("input[name=" + $(this).attr('name') + "]").val($(this).val());
             }
         });
+        $('#ls_frmpresentation textarea').each(function () {
+            if ($(this).attr('name').indexOf('lsi_') == 0) {
+                ret.push(this);
+                $("textarea[name=" + $(this).attr('name') + "]").val($(this).val());
+            }
+        });
         return ret;
 
     }
