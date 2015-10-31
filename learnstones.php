@@ -4,7 +4,7 @@ Plugin Name: Learnstones
 Plugin URI: http://learnstones.com/
 Description: Includes pdf print out (tcpdf included as plugin).
 Author: Richard Drake and Raymond Francis 
-Version: 0.8.4
+Version: 0.8.5
 */
 
 //http://localhost/wordpress/?ls_lesson=whatstrto
@@ -3461,7 +3461,7 @@ class Learnstones_Plugin
                         }
 
                         $ret .= $dops;
-                        $ret .= "</p></div>";
+                        $ret .= "</div>";
                         $ret .= "<div id='ls_man'>";
                         $ret .= "<p>" . get_submit_button( __('Merge'), 'secondary', 'ls_merge', FALSE, array('id' => 'ls_merge') ) . " ticked inputs to latest session or selected user</p>";
                         $ret .= "<p id='ls_p_remove_class'>" . get_submit_button( __('Remove'), 'secondary', 'ls_remove', FALSE, array('id' => 'ls_remove') ) . " ticked users from &quot;<span class='ls_class_name'>" . ($curClassName == "" ? "All my classes" : $curClassName) . "</span>&quot;</p>";
@@ -3881,7 +3881,7 @@ class Learnstones_Plugin
             $name = esc_attr($atts['name']);
             if(isset($this->lesson_data['lesson'][$atts['name']]))
             {
-                $val = esc_attr($this->lesson_data['lesson'][$atts['name']]);   
+                $val = $this->lesson_data['lesson'][$atts['name']];   
             }
         }
         elseif($this->shortcode_validation)
@@ -3896,7 +3896,29 @@ class Learnstones_Plugin
             }
             else
             {
-                $ret = "<input type='text' value='$val' name='lsi_$name' />";
+                $type = 'text';
+                if(isset($atts['type']))
+                {
+                    $type = $atts['type'];
+                }
+                if($type == "textarea")
+                {
+                    $rows = 5;
+                    $cols = 40;
+                    if(isset($atts['rows']))
+                    {
+                        $rows = $atts['rows'];                        
+                    }
+                    if(isset($atts['cols']))
+                    {
+                        $cols = $atts['cols'];
+                    }
+                    $ret = "<textarea cols='" . esc_attr($cols) . "' rows='" . esc_attr($rows) . "' name='lsi_$name'>" . esc_html($val) . "</textarea>";
+                }
+                else
+                {
+                    $ret = "<input type='text' value='" . esc_attr($val) . "' name='lsi_$name' />";
+                }
                 $this->shortcode_fields[$name] = $this->shortcode_ls;
             }
         }

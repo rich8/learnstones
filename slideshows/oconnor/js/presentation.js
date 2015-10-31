@@ -61,21 +61,24 @@ function Presentation($)
 
         var handled = true;
         switch (event.keyCode) {
-            //case this.$.ui.keyCode.HOME:
-            //    this.set_current_slide(0);
-            //    break;
-            //case this.$.ui.keyCode.END:  
-            //    this.set_current_slide(this.components.length - 1);  
-            //    break;  
+            //case this.$.ui.keyCode.HOME:   
+            //    this.set_current_slide(0);   
+            //    break;   
+            //case this.$.ui.keyCode.END:     
+            //    this.set_current_slide(this.components.length - 1);     
+            //    break;     
             case this.$.ui.keyCode.ENTER:
+                if (document.activeElement.tagName == "TEXTAREA") {
+                    handled = false;
+                }
                 break;
-            //case this.$.ui.keyCode.SPACE:  
-            //case this.$.ui.keyCode.RIGHT:
-            //    this.next_slide();
-            //    break;
-            //case this.$.ui.keyCode.LEFT:
-            //    this.previous_slide();
-            //    break;
+            //case this.$.ui.keyCode.SPACE:     
+            //case this.$.ui.keyCode.RIGHT:   
+            //    this.next_slide();   
+            //    break;   
+            //case this.$.ui.keyCode.LEFT:   
+            //    this.previous_slide();   
+            //    break;   
             case this.$.ui.keyCode.ESCAPE:
                 this.box.hide();
                 break;
