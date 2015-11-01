@@ -23,7 +23,7 @@
         $('#ls_frmpresentation textarea').each(function () {
             if ($(this).attr('name').indexOf('lsi_') == 0) {
                 ret.push(this);
-                $("textarea[name=" + $(this).attr('name') + "]").val($(this).val());
+                $("textarea[name=" + $(this).attr('name') + "]").html($(this).val());
             }
         });
         return ret;
