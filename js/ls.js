@@ -313,9 +313,11 @@
                 txt = "<a href='" + op + "'>" + ls.escape_html(txt) + "</a>";
             } else {
                 txt = ls.escape_html(txt);
+                txt = txt.replace('\n', "<br>").replace(' ', "&nbsp;");
             }
         } else if (txt) {
             txt = ls.escape_html(txt);
+            txt = txt.replace('\n', "<br>").replace(' ', "&nbsp;");
         }
         td.html(txt);
 
@@ -854,9 +856,9 @@
             },
             success: function (response) {
                 // $('#debug').text(response.debug);
-                alert(response.debug);
+                //alert(response.debug);
                 ls.input_responses(response, true);
-                alert("done");
+                //alert("done");
                 setTimeout(function () {
                     ls.dashboard()
                 }, 10000);
@@ -1032,7 +1034,6 @@
 			            }, lsAjax.login_warn);
 			        }
 			    } else if (lsAjax.view_mode == 3) {
-			        alert("AAA");
 			        $('#ls_dashboard td').on(
 							'mouseover mouseleave',
 							function (e) {

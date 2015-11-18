@@ -3364,6 +3364,7 @@ class Learnstones_Plugin
                         $ret .= "<li>Filter: <select id='ls_filter' name='ls_filter'>";
                         $ret .= "<option value='-1'>(Any Class)</option>";
                         $curClassName = "";
+                        $curclass = -1;
                         if(count($classes) > 0)
                         {
                             $inClass = "";
@@ -3378,7 +3379,6 @@ class Learnstones_Plugin
                             }
 
                             $authorClasses = $wpdb->get_results("SELECT ID,post_name,post_title FROM {$wpdb->posts} WHERE ID IN ($inClass) AND post_status='publish' ORDER BY post_name", OBJECT_K);
-                            $curclass = -1;
                             $curClassName = "";
                             if(isset($_GET[self::LS_FLD_CLASS_NO]))
                             {
@@ -4682,6 +4682,8 @@ class Learnstones_Plugin
         else
         {
             $inp = esc_html($pureInp);
+            $inp = str_replace("\n", "<br>", $inp);
+            $inp = str_replace(" ", "&nbsp;", $inp);
         }
 
         return $inp;
