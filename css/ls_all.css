@@ -19,3 +19,7 @@
     color: #c0c0c0;
     font-style: italic;
 }
+
+pre {
+    white-space: pre;
+}

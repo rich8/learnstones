@@ -32,12 +32,14 @@ class Learnstones_Plugin
     const LS_TOK_INPUT = "%input%";
 
 	const LS_SCRIPT = "ls_script";
+	const LS_SCRIPT_HIGHLIGHT = "ls_highlight";
 	const LS_SCRIPT_HEAD = "ls_head";
 
 	const LS_STYLE = "ls_style";
 	const LS_STYLE_EDIT = "ls_style_edit";
 	const LS_STYLE_BESPOKE = "ls_style_bespoke";
 	const LS_STYLE_ALL = "ls_style_all";
+    const LS_STYLE_HIGHLIGHT = "ls_style_highlight";
 
 	const LS_TYPE_LESSON = "ls_lesson";
 	const LS_TYPE_COURSE = "ls_course";
@@ -1472,6 +1474,10 @@ class Learnstones_Plugin
         {
             wp_register_script( self::LS_SCRIPT, plugins_url($mainScript, __FILE__), $lsDep, FALSE, TRUE );
 		    wp_enqueue_script( self::LS_SCRIPT );
+            wp_register_style( self::LS_STYLE_HIGHLIGHT, plugins_url('highlight/styles/default.css', __FILE__));
+	        wp_enqueue_style( self::LS_STYLE_HIGHLIGHT );
+            wp_register_script( self::LS_SCRIPT_HIGHLIGHT, plugins_url('highlight/highlight.pack.js', __FILE__));
+            wp_enqueue_script( self::LS_SCRIPT_HIGHLIGHT );
             wp_register_script( self::LS_SCRIPT_HEAD, plugins_url('js/ls_head.js', __FILE__), array('jquery'));
 		    wp_localize_script( self::LS_SCRIPT_HEAD, 'lsAjax', $lsAjaxDat);
 		    wp_enqueue_script( self::LS_SCRIPT_HEAD );
@@ -1608,7 +1614,7 @@ class Learnstones_Plugin
                     if(!isset($row['deleted'])
                         && (!empty($row['name']) || !empty($row['format']))
                         ) {?>
-                        <tr><td><input class='ls_ph' placeholder="New Input Format Name" name="<?php echo($optprefix . "[" . $index . "][name]") ?>" type="text" value="<?php echo($row['name'])?>" /></td><td><input class="ls_setting ls_ph" name="<?php echo($optprefix . "[" . $index . "][format]") ?>" type="text" value="<?php echo($row['format'])?>" placeholder="New Format" /><?php if(strpos(strtolower($row['format']), self::LS_TOK_INPUT) === FALSE){echo "<br />No " . self::LS_TOK_INPUT . " token"; }?></td><td><input  name="<?php echo($optprefix . "[" . $index . "][url]") ?>" type="checkbox" <?php if(isset($row['url'])) { echo "checked"; }?> /></td><td><input  name="<?php echo($optprefix . "[" . $index . "][deleted]") ?>" type="checkbox" <?php if(isset($row['deleted'])) { echo "checked"; }?> /></td></tr><?php 
+                        <tr><td><input class='ls_ph' placeholder="New Input Format Name" name="<?php echo($optprefix . "[" . $index . "][name]") ?>" type="text" value="<?php echo($row['name'])?>" /></td><td><input class="ls_setting ls_ph" name="<?php echo($optprefix . "[" . $index . "][format]") ?>" type="text" value="<?php echo(esc_attr($row['format']))?>" placeholder="New Format" /><?php if(strpos(strtolower($row['format']), self::LS_TOK_INPUT) === FALSE){echo "<br />No " . self::LS_TOK_INPUT . " token"; }?></td><td><input  name="<?php echo($optprefix . "[" . $index . "][url]") ?>" type="checkbox" <?php if(isset($row['url'])) { echo "checked"; }?> /></td><td><input  name="<?php echo($optprefix . "[" . $index . "][deleted]") ?>" type="checkbox" <?php if(isset($row['deleted'])) { echo "checked"; }?> /></td></tr><?php 
                         $index++;
                     }
                 }?>
@@ -4681,9 +4687,11 @@ class Learnstones_Plugin
         }
         else
         {
-            $inp = esc_html($pureInp);
-            $inp = str_replace("\n", "<br>", $inp);
-            $inp = str_replace(" ", "&nbsp;", $inp);
+            $inp = preg_replace_callback('~(<pre.*?><code*.?>)(.*?)(</code></pre>)~ismu',
+                function($i) {
+                    return $i[1] . esc_html($i[2]) . $i[3];
+                }, $inp
+            );
         }
 
         return $inp;
