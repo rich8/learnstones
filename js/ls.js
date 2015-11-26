@@ -1044,6 +1044,7 @@
 			                ls.login_warn()
 			            }, lsAjax.login_warn);
 			        }
+			        hljs.initHighlightingOnLoad();
 			    } else if (lsAjax.view_mode == 3) {
 			        $('#ls_dashboard td').on(
 							'mouseover mouseleave',
