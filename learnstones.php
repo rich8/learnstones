@@ -2,9 +2,9 @@
 /*
 Plugin Name: Learnstones
 Plugin URI: http://learnstones.com/
-Description: Includes pdf print out (tcpdf included as plugin).
+Description: Towards multiline input with syntax highlighting
 Author: Richard Drake and Raymond Francis 
-Version: 0.8.5
+Version: 0.8.6
 */
 
 //http://localhost/wordpress/?ls_lesson=whatstrto
