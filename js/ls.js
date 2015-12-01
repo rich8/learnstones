@@ -403,9 +403,6 @@
                 // alert(response.response);
             }
         });
-        $('pre code').each(function (i, block) {
-            hljs.highlightBlock(block);
-        });
     }
 
     /**
@@ -660,6 +657,9 @@
             if (filter != 0) {
                 ls.db_filter(filter);
             }
+            $('pre code').each(function (i, block) {
+                hljs.highlightBlock(block);
+            });
             $('#ls_dashboard_time').val(response.latest);
         } else {
             alert("Session timed out, please re-logon");
