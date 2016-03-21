@@ -2784,7 +2784,7 @@ class Learnstones_Plugin
 					    time datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
     					dbupdate datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
 					    history LONGTEXT,
-                        value varchar(255),
+                        value varchar(30000),
 					    UNIQUE KEY id (id),
 					    KEY user_key (post,user,field),
 					    KEY update_key (post,dbupdate)
@@ -3920,6 +3920,22 @@ class Learnstones_Plugin
                         $cols = $atts['cols'];
                     }
                     $ret = "<textarea cols='" . esc_attr($cols) . "' rows='" . esc_attr($rows) . "' name='lsi_$name'>" . esc_html($val) . "</textarea>";
+                }
+                elseif ($type == "radio")
+                {
+                    $opts = explode(",", $atts['options']);
+                    $ret = "";
+                    $index = 0;
+                    foreach($opts as $opt)
+                    {
+                        $selected = "";
+                        if($val == $opt)
+                        {
+                            $selected = " checked='checked'";
+                        }
+                        $ret .= "<input $selected type='radio' name='lsi_$name' data-radio-id='lsi_{$name}_$index' value='" . esc_attr($opt) . "'/>&nbsp;<label>" . esc_html($opt) . "</label><br />";
+                        $index++;
+                    }
                 }
                 else
                 {

@@ -15,9 +15,18 @@
 
         var ret = [];
         $('#ls_frmpresentation input').each(function () {
-            if ($(this).attr('name').indexOf('lsi_') == 0) {
-                ret.push(this);
-                $("input[name=" + $(this).attr('name') + "]").val($(this).val());
+            var component = $(this);
+            if (component.attr('name').indexOf('lsi_') == 0) {
+                if (component.attr('type') == 'radio') {
+                    if (component.prop('checked')) {
+                        ret.push(this);
+                        $("input[data-radio-id=" + component.attr('data-radio-id') + "]").prop('checked', true);
+                    }
+                }
+                else {
+                    ret.push(this);
+                    $("input[name=" + component.attr('name') + "]").val($(this).val());
+                }
             }
         });
         $('#ls_frmpresentation textarea').each(function () {
