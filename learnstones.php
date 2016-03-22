@@ -3923,7 +3923,16 @@ class Learnstones_Plugin
                 }
                 elseif ($type == "radio" || $type="checkbox")
                 {
+                    $random = TRUE;
+                    if(isset($atts['random']) && $atts['random'] == "false")
+                    {
+                        $random = FALSE;
+                    }
                     $opts = explode(",", $atts['options']);
+                    if($random)
+                    {
+                        shuffle($opts);
+                    }
                     $ret = "";
                     $index = 0;
                     $vals = explode(",", $val);
