@@ -3921,19 +3921,30 @@ class Learnstones_Plugin
                     }
                     $ret = "<textarea cols='" . esc_attr($cols) . "' rows='" . esc_attr($rows) . "' name='lsi_$name'>" . esc_html($val) . "</textarea>";
                 }
-                elseif ($type == "radio")
+                elseif ($type == "radio" || $type="checkbox")
                 {
                     $opts = explode(",", $atts['options']);
                     $ret = "";
                     $index = 0;
+                    $vals = explode(",", $val);
                     foreach($opts as $opt)
                     {
                         $selected = "";
-                        if($val == $opt)
+                        $inputName = "lsi_" . $name;
+                        $inputGroup = $inputName;
+                        if($type == 'checkbox')
+                        {
+                            $inputName .= $opt;
+                        }
+                        else
+                        {
+                            $inputGroup .= "_$index";
+                        }
+                        if(in_array($opt, $vals))
                         {
                             $selected = " checked='checked'";
                         }
-                        $ret .= "<input $selected type='radio' name='lsi_$name' data-radio-id='lsi_{$name}_$index' value='" . esc_attr($opt) . "'/>&nbsp;<label>" . esc_html($opt) . "</label><br />";
+                        $ret .= "<input $selected type='$type' name='$inputName' data-$type-id='$inputGroup' value='" . esc_attr($opt) . "'/>&nbsp;<label>" . esc_html($opt) . "</label><br />";
                         $index++;
                     }
                 }

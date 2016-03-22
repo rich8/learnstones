@@ -14,6 +14,7 @@
     ls.save = function () {
 
         var ret = [];
+        var checkboxes = new Object();
         $('#ls_frmpresentation input').each(function () {
             var component = $(this);
             if (component.attr('name').indexOf('lsi_') == 0) {
@@ -21,6 +22,29 @@
                     if (component.prop('checked')) {
                         ret.push(this);
                         $("input[data-radio-id=" + component.attr('data-radio-id') + "]").prop('checked', true);
+                    }
+                }
+                else if (component.attr('type') == 'checkbox') {
+                    if (component.prop('checked')) {
+                        var hidden;
+                        if (component.attr('data-checkbox-id') in checkboxes) {
+                            hidden = checkboxes[component.attr('data-checkbox-id')];
+                        }
+                        else {
+                            hidden = document.createElement("input");
+                            ret.push(hidden);
+                            checkboxes[component.attr('data-checkbox-id')] = $(hidden);
+                            hidden = $(hidden);
+                            hidden.prop('name', component.attr('data-checkbox-id'));
+                        }
+                        $("input[name=" + component.attr('name') + "]").prop('checked', true);
+                        if (hidden.val()) {
+                            hidden.val(hidden.val() + "," + $(this).val());
+                        }
+                        else {
+                            hidden.val($(this).val());
+                        }
+                        alert(hidden.val());
                     }
                 }
                 else {
