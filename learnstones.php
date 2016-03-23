@@ -4,7 +4,7 @@ Plugin Name: Learnstones
 Plugin URI: http://learnstones.com/
 Description: Includes pdf print out (tcpdf included as plugin).
 Author: Richard Drake and Raymond Francis 
-Version: 0.8.5
+Version: 0.9
 */
 
 //http://localhost/wordpress/?ls_lesson=whatstrto
@@ -25,7 +25,7 @@ class Learnstones_Plugin
 
 	const LS_DB_VERSION = "0.70";
 
-	const LS_STYLES = "ls_menu0 ls_menu1 ls_menu2 ls_menu3";
+	const LS_STYLES = "ls_menu0 ls_menu1 ls_menu2 ls_menu3 ls_menu4";
 
 	const LS_COOKIE = "lscookie";
 
@@ -34,6 +34,7 @@ class Learnstones_Plugin
 	const LS_SCRIPT = "ls_script";
 	const LS_SCRIPT_HIGHLIGHT = "ls_highlight";
 	const LS_SCRIPT_HEAD = "ls_head";
+	const LS_SCRIPT_FOOT = "ls_foot";
 
 	const LS_STYLE = "ls_style";
 	const LS_STYLE_EDIT = "ls_style_edit";
@@ -164,6 +165,11 @@ class Learnstones_Plugin
                             "l3" => "I get it"
                         );
 
+    private $LS_LIGHTS_DEFAULT_AUTOMARK = array(
+                            "l4" => "Ready to move on"
+                        );
+
+
 	private $session_id = -1;
     private $session_class;
     private $session_name = "";
@@ -185,6 +191,7 @@ class Learnstones_Plugin
     private $max_width = 640;
     private $settings_page;
     private $login_redirect;
+    private $auto_answers = array();
 
 	function __construct() {
 		add_action( 'init', array( $this, 'init' ) );
@@ -215,6 +222,7 @@ class Learnstones_Plugin
         add_action( 'wp_authenticate', array($this, 'wp_authenticate'), 10, 2);
         add_action( 'login_form', array($this, 'login_form'));
         add_action( 'login_message', array($this, 'login_message'));
+        add_action( 'wp_footer', array($this, 'wp_footer'));
 
         //add_action( 'pre_get_posts', array($this, 'goto_learnstone') );
 
@@ -1424,7 +1432,7 @@ class Learnstones_Plugin
                 }
             }
             $lsAjaxDat['login_warn'] = $val * 1000;
-
+            $lsAjaxDat['auto_answers'] = $this->auto_answers;
 
 		    wp_register_style( 'ls_theme_style', plugins_url('css/slide.css', __FILE__), $deps );
             $this->max_width = 100 * count($lss);
@@ -1481,6 +1489,7 @@ class Learnstones_Plugin
             wp_register_script( self::LS_SCRIPT_HEAD, plugins_url('js/ls_head.js', __FILE__), array('jquery'));
 		    wp_localize_script( self::LS_SCRIPT_HEAD, 'lsAjax', $lsAjaxDat);
 		    wp_enqueue_script( self::LS_SCRIPT_HEAD );
+            wp_register_script( self::LS_SCRIPT_FOOT, plugins_url('js/ls_foot.js', __FILE__), array(), FALSE, TRUE );
         }
         wp_register_style( self::LS_STYLE_ALL, plugins_url('css/ls_all.css', __FILE__));
 	    wp_enqueue_style( self::LS_STYLE_ALL );
@@ -3896,18 +3905,20 @@ class Learnstones_Plugin
         }
         if(!empty($name))
         {
-            if($this->pdf)
+            $type = 'text';
+            if(isset($atts['type']))
             {
-                $ret = "__________________";
+                $type = $atts['type'];
             }
-            else
+            if($type === "textarea")
             {
-                $type = 'text';
-                if(isset($atts['type']))
+                if($this->pdf)
                 {
-                    $type = $atts['type'];
+                    $ret = "__________________<br />";
+                    $ret .= "__________________<br />";
+                    $ret .= "__________________<br />";
                 }
-                if($type == "textarea")
+                else
                 {
                     $rows = 5;
                     $cols = 40;
@@ -3919,24 +3930,51 @@ class Learnstones_Plugin
                     {
                         $cols = $atts['cols'];
                     }
+                    if(isset($atts['answer']))
+                    {
+                        $this->auto_answers["lsi_" . $name] = $atts['answer'];
+                    }
                     $ret = "<textarea cols='" . esc_attr($cols) . "' rows='" . esc_attr($rows) . "' name='lsi_$name'>" . esc_html($val) . "</textarea>";
                 }
-                elseif ($type == "radio" || $type="checkbox")
+            }
+            elseif ($type === "radio" || $type === "checkbox")
+            {
+                $ret = "";
+                $random = TRUE;
+                if(isset($atts['random']) && $atts['random'] == "false")
                 {
-                    $random = TRUE;
-                    if(isset($atts['random']) && $atts['random'] == "false")
+                    $random = FALSE;
+                }
+                $opts = explode(",", $atts['options']);
+                if($random)
+                {
+                    shuffle($opts);
+                }
+                if($this->pdf)
+                {
+                    foreach($opts as $opt)
                     {
-                        $random = FALSE;
+                        $ret .= "__ " . $opt + "<br />";
                     }
-                    $opts = explode(",", $atts['options']);
-                    if($random)
-                    {
-                        shuffle($opts);
-                    }
-                    $ret = "";
+                }
+                else
+                {
                     $index = 0;
                     $vals = explode(",", $val);
+                    $answers = "";
+                    $conj = "";
+                    $newopts = array();
                     foreach($opts as $opt)
+                    {
+                        if(substr_compare($opt, "+", strlen($opt) - 1, 1) === 0)
+                        {
+                            $opt = substr($opt, 0, strlen($opt) - 1);
+                            $answers .= $conj . $opt;
+                            $conj = ",";
+                        }
+                        $newopts[] = $opt;
+                    }
+                    foreach($newopts as $opt)
                     {
                         $selected = "";
                         $inputName = "lsi_" . $name;
@@ -3956,12 +3994,31 @@ class Learnstones_Plugin
                         $ret .= "<input $selected type='$type' name='$inputName' data-$type-id='$inputGroup' value='" . esc_attr($opt) . "'/>&nbsp;<label>" . esc_html($opt) . "</label><br />";
                         $index++;
                     }
+                    if(!empty($answers))
+                    {
+                        $this->auto_answers["lsi_" . $name] = $answers;
+                    }
+                }
+            }
+            else
+            {
+                if($this->pdf)
+                {
+                    $ret = "__________________ ";
                 }
                 else
                 {
+                    if(isset($atts['answer']))
+                    {
+                        $this->auto_answers["lsi_" . $name] = $atts['answer'];
+                    }
                     $ret = "<input type='text' value='" . esc_attr($val) . "' name='lsi_$name' />";
                 }
-                $this->shortcode_fields[$name] = $this->shortcode_ls;
+            }
+            $this->shortcode_fields[$name] = $this->shortcode_ls;
+            if(count($this->auto_answers))
+            {
+                $this->lights = $this->LS_LIGHTS_DEFAULT_AUTOMARK;
             }
         }
         return $ret;   
@@ -4731,6 +4788,12 @@ class Learnstones_Plugin
         }
 
         return $inp;
+    }
+
+    function wp_footer()
+    {
+	    wp_localize_script( self::LS_SCRIPT_FOOT, 'lsAnswers', $this->auto_answers);
+	    wp_enqueue_script( self::LS_SCRIPT_FOOT );
     }
 }
 

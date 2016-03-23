@@ -44,7 +44,6 @@
                         else {
                             hidden.val($(this).val());
                         }
-                        alert(hidden.val());
                     }
                 }
                 else {
