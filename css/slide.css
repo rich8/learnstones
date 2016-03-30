@@ -153,8 +153,12 @@ input.ls_lightsl2, input.ls_lightsl2:hover, input.ls_lightsl2:focus {
 	background-position: 0px -128px;
 }
 
-input.ls_lightsl3, input.ls_lightsl3:hover, input.ls_lightsl1:focus {
+input.ls_lightsl3, input.ls_lightsl3:hover, input.ls_lightsl3:focus {
 	background-position: 0px -160px;
+}
+
+input.ls_lightsl4, input.ls_lightsl4:hover, input.ls_lightsl4:focus {
+	background-position: -173px -96px;
 }
 
 ul.ls_loginmenu {

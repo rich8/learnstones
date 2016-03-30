@@ -192,7 +192,6 @@
         if (response == 4) {
             response = 3;
             for (var field in obj) {
-                alert(field);
                 if (lsAnswers[field]) {
                     if (lsAnswers[field] !== obj[field]) {
                         response = 1;
