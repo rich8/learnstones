@@ -189,7 +189,9 @@
                 obj[$(vals[i]).attr('name')] = $(vals[i]).val();
             }
         }
+        var marked = 0;
         if (response == 4) {
+            marked = 1;
             response = 3;
             for (var field in obj) {
                 if (lsAnswers[field]) {
@@ -213,13 +215,14 @@
                 dataType: "json",
                 url: lsAjax.ajaxurl,
                 data: {
-                    action: "ls_submission",
-                    type: "mark",
-                    post_id: lsAjax.post_id,
-                    learnstone: lsAjax.lss[learnstone],
-                    response: response,
-                    nonce: lsAjax.nonce,
-                    inputs: obj
+                    'action': "ls_submission",
+                    'type': "mark",
+                    'post_id': lsAjax.post_id,
+                    'learnstone': lsAjax.lss[learnstone],
+                    'response': response,
+                    'nonce': lsAjax.nonce,
+                    'inputs': obj,
+                    'marked': marked
                 },
                 success: function (response) {
                     if (response.response != 'ok') {

@@ -23,7 +23,7 @@ if(is_plugin_active(TCPDF_PLUGIN))
 class Learnstones_Plugin
 {
 
-	const LS_DB_VERSION = "0.70";
+	const LS_DB_VERSION = "0.71";
 
 	const LS_STYLES = "ls_menu0 ls_menu1 ls_menu2 ls_menu3 ls_menu4";
 
@@ -1875,6 +1875,7 @@ class Learnstones_Plugin
                 $post_id = $_POST[self::LS_FLD_POST_ID];
                 $result['response'] = "ok";
                 $res = intval($_POST['response']);
+                $marked = intval($_POST['marked']);
 
                 $userOrSession = $this->session_id;
                 $isUser = FALSE;
@@ -1887,7 +1888,7 @@ class Learnstones_Plugin
 
                 if($res >= 0)
                 {
-    			    $this->set_learnstone_data($post_id, $_POST['learnstone'], $res, 0, $userOrSession, $isUser);
+    			    $this->set_learnstone_data($post_id, $_POST['learnstone'], $res, $marked, 0, $userOrSession, $isUser);
 			    }
                 if(isset($_POST['inputs']))
                 {
@@ -2443,10 +2444,11 @@ class Learnstones_Plugin
         $time = current_time('mysql');
         foreach($rows as $row)
         {
+            $marked = $row->marked;
             $data = unserialize($row->history);
             foreach($data as $key => $response)
             {
-                $this->set_learnstone_data( $row->post, $row->stone, $response, $key, $userOrSession, $isUser);
+                $this->set_learnstone_data( $row->post, $row->stone, $response, $key, $marked, $userOrSession, $isUser);
             }
         }
 
@@ -2764,7 +2766,8 @@ class Learnstones_Plugin
                         value mediumint(20),
 					    time datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
     					dbupdate datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
-					    UNIQUE KEY id (id),
+					    marked mediumint(20) DEFAULT 0 NOT NULL,
+                        UNIQUE KEY id (id),
 					    KEY stone_key (post,user,stone),
 					    KEY user_key (user,stone),
 					    KEY update_key (post,dbupdate)
@@ -3011,7 +3014,7 @@ class Learnstones_Plugin
         }
     }
 
-	function set_learnstone_data($post_id, $learnstone, $response, $time, $userOrSession, $isUser)
+	function set_learnstone_data($post_id, $learnstone, $response, $marked, $time, $userOrSession, $isUser)
 	{
         
 		global $wpdb;
@@ -3042,7 +3045,8 @@ class Learnstones_Plugin
     			    'time' => $t,
                     'history' => serialize(array($t => $response )),
                     'value' => $response,
-                    'dbupdate' => current_time('mysql')
+                    'dbupdate' => current_time('mysql'),
+                    'marked' => $marked
 			    ),
 			    array(
 				    "%d",
@@ -3051,7 +3055,8 @@ class Learnstones_Plugin
 				    "%s",
 				    "%s",
                     "%d",
-                    "%s"
+                    "%s",
+                    "%d"
 			    )
 		    );
         }
@@ -3065,7 +3070,8 @@ class Learnstones_Plugin
     			    'time' => $t,
                     'history' => serialize($data),
                     'value' => end($data),
-                    'dbupdate' => current_time('mysql')
+                    'dbupdate' => current_time('mysql'),
+                    'marked' => (key($data) == $t ? $marked : $row->marked)
 			    ),
                 array(
                     'id' => $row->id
