@@ -58,6 +58,12 @@
                 $("textarea[name=" + $(this).attr('name') + "]").html($(this).val());
             }
         });
+        $('#ls_frmpresentation select').each(function () {
+            if ($(this).attr('name').indexOf('lsi_') == 0) {
+                ret.push(this);
+                $("select[name=" + $(this).attr('name') + "]").val($(this).val());
+            }
+        });
         return ret;
 
     }
@@ -71,6 +77,15 @@
 				{
 				    ele: function () {
 				        var element = $("<form></form>");
+
+				        // Fix because jQuery cannot clone selectedIndex
+				        var toClone = $(this).find("div").first();
+				        var cloned = toClone.clone(true);
+				        toClone.find("select").each(function () {
+				            var selectedValue = $(this).val();
+				            cloned.find("select[name=" + this.name + "] option[value=" + selectedValue + "]").attr("selected", "selected");
+				        });
+
 				        element
                             .attr("method", "post")
                             .prop('id', 'ls_frmpresentation')
@@ -80,7 +95,7 @@
                             )
                             .append(
                                 $("<div></div>")
-                                    .append($(this).find("div").first().clone(true))
+                                    .append(cloned)
                             );
 				        return element;
 				    }

@@ -3943,7 +3943,7 @@ class Learnstones_Plugin
                     $ret = "<textarea cols='" . esc_attr($cols) . "' rows='" . esc_attr($rows) . "' name='lsi_$name'>" . esc_html($val) . "</textarea>";
                 }
             }
-            elseif ($type === "radio" || $type === "checkbox")
+            elseif ($type === "radio" || $type === "checkbox" || $type==="combo")
             {
                 $ret = "";
                 $random = TRUE;
@@ -3970,6 +3970,10 @@ class Learnstones_Plugin
                     $answers = "";
                     $conj = "";
                     $newopts = array();
+                    if($type==="combo")
+                    {
+                        $ret .= "<select name='lsi_$name'>";
+                    }
                     foreach($opts as $opt)
                     {
                         if(substr_compare($opt, "+", strlen($opt) - 1, 1) === 0)
@@ -3993,12 +3997,27 @@ class Learnstones_Plugin
                         {
                             $inputGroup .= "_$index";
                         }
-                        if(in_array($opt, $vals))
+                        if($type==="combo")
                         {
-                            $selected = " checked='checked'";
+                            if(in_array($opt, $vals))
+                            {
+                                $selected = " selected='selected'";
+                            }
+                            $ret .= "<option $selected value='" . esc_attr($opt) . "'>" . esc_html($opt) . "</option>";
                         }
-                        $ret .= "<input $selected type='$type' name='$inputName' data-$type-id='$inputGroup' value='" . esc_attr($opt) . "'/>&nbsp;<label>" . esc_html($opt) . "</label><br />";
+                        else
+                        {
+                            if(in_array($opt, $vals))
+                            {
+                                $selected = " checked='checked'";
+                            }
+                            $ret .= "<input $selected type='$type' name='$inputName' data-$type-id='$inputGroup' value='" . esc_attr($opt) . "'/>&nbsp;<label>" . esc_html($opt) . "</label><br />";
+                        }
                         $index++;
+                    }
+                    if($type==="combo")
+                    {
+                        $ret .= "</select>";
                     }
                     if(!empty($answers))
                     {
