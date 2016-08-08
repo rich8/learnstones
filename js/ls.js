@@ -189,6 +189,19 @@
                 obj[$(vals[i]).attr('name')] = $(vals[i]).val();
             }
         }
+        var marked = 0;
+        if (response == 4) {
+            marked = 1;
+            response = 3;
+            for (var field in obj) {
+                if (lsAnswers[field]) {
+                    if (lsAnswers[field] !== obj[field]) {
+                        response = 1;
+                        break;
+                    }
+                }
+            }
+        }
         if (response >= 0) {
             $("input[data-menu=ls_menu" + learnstone + "]").each(
 					function () {
@@ -197,30 +210,30 @@
 					});
         }
         if (response >= 0 || vals.length > 0) {
-            $
-					.ajax({
-					    type: "post",
-					    dataType: "json",
-					    url: lsAjax.ajaxurl,
-					    data: {
-					        action: "ls_submission",
-					        type: "mark",
-					        post_id: lsAjax.post_id,
-					        learnstone: lsAjax.lss[learnstone],
-					        response: response,
-					        nonce: lsAjax.nonce,
-					        inputs: obj
-					    },
-					    success: function (response) {
-					        if (response.response != 'ok') {
-					            alert("Your session has been invalidated.  You will be redirected to the home page");
-					            location.reload();
-					        }
-					    },
-					    error: function (a, b, c) {
-					        alert("error:" + a.responseText + "," + b + "," + c);
-					    }
-					});
+            $.ajax({
+                type: "post",
+                dataType: "json",
+                url: lsAjax.ajaxurl,
+                data: {
+                    'action': "ls_submission",
+                    'type': "mark",
+                    'post_id': lsAjax.post_id,
+                    'learnstone': lsAjax.lss[learnstone],
+                    'response': response,
+                    'nonce': lsAjax.nonce,
+                    'inputs': obj,
+                    'marked': marked
+                },
+                success: function (response) {
+                    if (response.response != 'ok') {
+                        alert("Your session has been invalidated.  You will be redirected to the home page");
+                        location.reload();
+                    }
+                },
+                error: function (a, b, c) {
+                    alert("error:" + a.responseText + "," + b + "," + c);
+                }
+            });
         }
         if (response >= 0) {
             ls.set_selected_index(-1);
@@ -297,7 +310,7 @@
                 $(this).html(ls.escape_html($(this).html()));
             }
         });
-         return ele.html();
+        return ele.html();
     }
 
     /**
@@ -402,9 +415,6 @@
             success: function (response) {
                 // alert(response.response);
             }
-        });
-        $('pre code').each(function (i, block) {
-            hljs.highlightBlock(block);
         });
     }
 
@@ -660,6 +670,9 @@
             if (filter != 0) {
                 ls.db_filter(filter);
             }
+            $('pre code').each(function (i, block) {
+                hljs.highlightBlock(block);
+            });
             $('#ls_dashboard_time').val(response.latest);
         } else {
             alert("Session timed out, please re-logon");
