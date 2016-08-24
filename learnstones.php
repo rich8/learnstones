@@ -192,6 +192,7 @@ class Learnstones_Plugin
     private $settings_page;
     private $login_redirect;
     private $auto_answers = array();
+    private $auto_answers_lights = 0;
 
 	function __construct() {
 		add_action( 'init', array( $this, 'init' ) );
@@ -3746,6 +3747,7 @@ class Learnstones_Plugin
                         $lss = $wpdb->get_results("SELECT id FROM $table_name WHERE post=$postId ORDER BY lsorder", OBJECT);
 
 				        foreach($slides as $key => $value) {
+                            $this->auto_answers_lights .= "-";
 					        if($first) { 
 						        $ret .= '<div class="ls_menu">';
 						        $ret .=     '<div class="ls_stones"><table><tr>';
@@ -4041,10 +4043,6 @@ class Learnstones_Plugin
                 }
             }
             $this->shortcode_fields[$name] = $this->shortcode_ls;
-            if(count($this->auto_answers))
-            {
-                $this->lights = $this->LS_LIGHTS_DEFAULT_AUTOMARK;
-            }
         }
         return $ret;   
     }
@@ -4146,8 +4144,14 @@ class Learnstones_Plugin
         }
         else
         {
+            $lights = $this->lights;
+            if(count($this->auto_answers) - $this->auto_answers_lights) {
+                $lights = $this->LS_LIGHTS_DEFAULT_AUTOMARK;                
+            }
+            $this->auto_answers_lights = count($this->auto_answers);
+
 			$ret = 	   '<ul class="ls_lights">';
-            foreach($this->lights as $lightNo => $caption)
+            foreach($lights as $lightNo => $caption)
             {
                 $lclasses = esc_attr("ls_lightsspan ls_lights$lightNo");
                 $aclasses = esc_attr("ls_lightsa ls_lightsa$lightNo");
