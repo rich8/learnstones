@@ -1364,11 +1364,11 @@ class Learnstones_Plugin
 				    }
 				    else
 				    {
-					    wp_register_script( $jsFile , plugins_url(self::LS_SLIDESHOW_FOLDER . "/$slide/js/" . $file, __FILE__), array('jquery'), FALSE, TRUE );
+					    wp_register_script( $jsFile , plugins_url( self::LS_SLIDESHOW_FOLDER . "/$slide/js/" . $file, __FILE__), array('jquery'), FALSE, TRUE );
 				    }
 				    $dep = $jsFile;
                     $lsDep = array($dep);
-					    wp_register_script( $jsFile , plugins_url( self::LS_SLIDESHOW_FOLDER . "/$slide/js/" . $file, __FILE__), array('jquery', $dep), FALSE, TRUE );
+					wp_register_script( $jsFile , plugins_url( self::LS_SLIDESHOW_FOLDER . "/$slide/js/" . $file, __FILE__), array('jquery', $dep), FALSE, TRUE );
 				    wp_enqueue_script( $jsFile, array (self::LS_SCRIPT), TRUE );
 				    $cnt++;
 			    }
@@ -1481,6 +1481,10 @@ class Learnstones_Plugin
         }
         if(!empty($mainScript))
         {
+            wp_register_script( 'util', plugins_url('js/util.js', __FILE__));
+            wp_register_script( 'md5', plugins_url('js/md5.js', __FILE__));
+            $lsDep[] = 'util';
+            $lsDep[] = 'md5';
             wp_register_script( self::LS_SCRIPT, plugins_url($mainScript, __FILE__), $lsDep, FALSE, TRUE );
 		    wp_enqueue_script( self::LS_SCRIPT );
             wp_register_style( self::LS_STYLE_HIGHLIGHT, plugins_url('highlight/styles/default.css', __FILE__));
@@ -3940,7 +3944,7 @@ class Learnstones_Plugin
                     }
                     if(isset($atts['answer']))
                     {
-                        $this->auto_answers["lsi_" . $name] = $atts['answer'];
+                        $this->auto_answers["lsi_" . $name] = $this->obfuscate($atts['answer']);
                     }
                     $ret = "<textarea cols='" . esc_attr($cols) . "' rows='" . esc_attr($rows) . "' name='lsi_$name'>" . esc_html($val) . "</textarea>";
                 }
@@ -3986,6 +3990,9 @@ class Learnstones_Plugin
                         }
                         $newopts[] = $opt;
                     }
+                    if($type==="combo") {
+                        $ret .= "<option value=''>(Select)</option>";                            
+                    }
                     foreach($newopts as $opt)
                     {
                         $selected = "";
@@ -4023,7 +4030,7 @@ class Learnstones_Plugin
                     }
                     if(!empty($answers))
                     {
-                        $this->auto_answers["lsi_" . $name] = $answers;
+                        $this->auto_answers["lsi_" . $name] = $this->obfuscate($answers);
                     }
                 }
             }
@@ -4037,7 +4044,7 @@ class Learnstones_Plugin
                 {
                     if(isset($atts['answer']))
                     {
-                        $this->auto_answers["lsi_" . $name] = $atts['answer'];
+                        $this->auto_answers["lsi_" . $name] = $this->obfuscate($atts['answer']);
                     }
                     $ret = "<input type='text' value='" . esc_attr($val) . "' name='lsi_$name' />";
                 }
@@ -4045,6 +4052,11 @@ class Learnstones_Plugin
             $this->shortcode_fields[$name] = $this->shortcode_ls;
         }
         return $ret;   
+    }
+
+    function obfuscate( $answers )
+    {
+        return md5($answers);
     }
 
     function shortcode_classid( $atts )

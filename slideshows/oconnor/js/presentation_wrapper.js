@@ -15,16 +15,16 @@
 
         var ret = [];
         var checkboxes = new Object();
-        $('#ls_frmpresentation input').each(function () {
+        $('#ls_frmpresentation :input').each(function () {
             var component = $(this);
-            if (component.attr('name').indexOf('lsi_') == 0) {
-                if (component.attr('type') == 'radio') {
+            if (component.attr('name').indexOf('lsi_') === 0) {
+                if (component.attr('type') === 'radio') {
                     if (component.prop('checked')) {
                         ret.push(this);
                         $("input[data-radio-id=" + component.attr('data-radio-id') + "]").prop('checked', true);
                     }
                 }
-                else if (component.attr('type') == 'checkbox') {
+                else if (component.attr('type') === 'checkbox') {
                     if (component.prop('checked')) {
                         var hidden;
                         if (component.attr('data-checkbox-id') in checkboxes) {
@@ -47,6 +47,7 @@
                     }
                 }
                 else {
+                    console.log("NON RADIO:" + $(this).val());
                     ret.push(this);
                     $("input[name=" + component.attr('name') + "]").val($(this).val());
                 }
