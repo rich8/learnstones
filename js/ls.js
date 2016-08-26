@@ -194,7 +194,6 @@
             marked = 1;
             response = 3;
             for (var field in obj) {
-                console.log("Checking:" + field);
                 if (lsAnswers[field]) {
                     var md = forge.md.md5.create();
                     md.update(obj[field]);

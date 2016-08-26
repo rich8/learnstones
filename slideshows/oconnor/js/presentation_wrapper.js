@@ -15,6 +15,7 @@
 
         var ret = [];
         var checkboxes = new Object();
+        var hidden;
         $('#ls_frmpresentation :input').each(function () {
             var component = $(this);
             if (component.attr('name').indexOf('lsi_') === 0) {
@@ -25,19 +26,18 @@
                     }
                 }
                 else if (component.attr('type') === 'checkbox') {
+                    if (component.attr('data-checkbox-id') in checkboxes) {
+                        hidden = checkboxes[component.attr('data-checkbox-id')];
+                    }
+                    else {
+                        hidden = document.createElement("input");
+                        ret.push(hidden);
+                        checkboxes[component.attr('data-checkbox-id')] = $(hidden);
+                        hidden = $(hidden);
+                        hidden.prop('name', component.attr('data-checkbox-id'));
+                    }
+                    $("input[name=" + component.attr('name') + "]").prop('checked', component.prop('checked'));
                     if (component.prop('checked')) {
-                        var hidden;
-                        if (component.attr('data-checkbox-id') in checkboxes) {
-                            hidden = checkboxes[component.attr('data-checkbox-id')];
-                        }
-                        else {
-                            hidden = document.createElement("input");
-                            ret.push(hidden);
-                            checkboxes[component.attr('data-checkbox-id')] = $(hidden);
-                            hidden = $(hidden);
-                            hidden.prop('name', component.attr('data-checkbox-id'));
-                        }
-                        $("input[name=" + component.attr('name') + "]").prop('checked', true);
                         if (hidden.val()) {
                             hidden.val(hidden.val() + "," + $(this).val());
                         }
@@ -47,7 +47,6 @@
                     }
                 }
                 else {
-                    console.log("NON RADIO:" + $(this).val());
                     ret.push(this);
                     $("input[name=" + component.attr('name') + "]").val($(this).val());
                 }
