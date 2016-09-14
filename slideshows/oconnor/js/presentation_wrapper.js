@@ -15,7 +15,6 @@
 
         var ret = [];
         var checkboxes = new Object();
-        var hidden;
         $('#ls_frmpresentation :input').each(function () {
             var component = $(this);
             if (component.attr('name').indexOf('lsi_') === 0) {
@@ -26,6 +25,7 @@
                     }
                 }
                 else if (component.attr('type') === 'checkbox') {
+                    var hidden;
                     if (component.attr('data-checkbox-id') in checkboxes) {
                         hidden = checkboxes[component.attr('data-checkbox-id')];
                     }
