@@ -1,5 +1,5 @@
-(function ($) {
 
+(function ($) {
     /*
     * Entities that need to be escaped in HTML
     */
@@ -183,7 +183,7 @@
     */
     ls.mark = function (learnstone, response) {
         var vals = $.ls.save();
-        var obj = new Object();
+        var obj = {};
         for (var i = 0; i < vals.length; i++) {
             if (response >= 0 || $(vals[i]).val().length > 0) {
                 obj[$(vals[i]).attr('name')] = $(vals[i]).val();
@@ -195,7 +195,10 @@
             response = 3;
             for (var field in obj) {
                 if (lsAnswers[field]) {
-                    if (lsAnswers[field] !== obj[field]) {
+                    var md = forge.md.md5.create();
+                    md.update(obj[field]);
+                    console.log(obj[field] + ":" + md.digest().toHex());
+                    if (lsAnswers[field] !== md.digest().toHex()) {
                         response = 1;
                         break;
                     }
